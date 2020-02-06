@@ -1,0 +1,14 @@
+Version 20180405.1
+- code changed to fortran95
+- dynamic allocation
+- openmp directives for shared memory parallelization
+- multiple source
+Version 20181219.1
+- correction for bugs pointed out by M. Vallée
+  - wrong size allocation for rr(nr) -> rr(nr*ns)
+- changed double = comparison with something more appropriate (doubleEquality())
+- write result in buffer mode to speed up writing process whith openmp (reflect5.f90)
+Version 20190404.1
+- corrected bug in dll2km when computing min,max of station coordinates in lat,lon
+Version 20190611.1
+- corrected bug in initdata.f90, nzrr and nzss were not initialized to 0
