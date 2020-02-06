@@ -1,0 +1,3 @@
+Two versions of axitra reflectivity code that computes the propagation of elastic waves in 3D stratified media.
+MOMENT version computes the radiation due to a moment tensor
+FORCE version computes the radiation due to unidirectional forces
