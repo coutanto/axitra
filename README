@@ -1,3 +1,5 @@
 Two versions of axitra reflectivity code that computes the propagation of elastic waves in 3D stratified media.
-MOMENT version computes the radiation due to a moment tensor
-FORCE version computes the radiation due to unidirectional forces
+The code uses the discrete wavenumber method (Bouchon 1982) in cylindrical coordinates (axi-symetric) and the reflectivy propagation
+across horizontal layers
+MOMENT version computes the radiation due to a moment tensor, see src/README
+FORCE version computes the radiation due to unidirectional forces, see src/README
