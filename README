@@ -3,3 +3,4 @@ The code uses the discrete wavenumber method (Bouchon 1982) in cylindrical coord
 across horizontal layers
 MOMENT version computes the radiation due to a moment tensor, see src/README
 FORCE version computes the radiation due to unidirectional forces, see src/README
+These are rewritten versions of the original codes using fortran90 and openMp
