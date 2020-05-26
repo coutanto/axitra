@@ -2,26 +2,31 @@
 
 CC=icc		#	C Compiler
 CFLAGS=-O3 	# 	and its options
+
 #
 # GFORTRAN compiler
-#
-#FC=gfortran
-#FFLAGS = -O3 -cpp -fopenmp
+# uncomment the following lines to compile with gcc
+# fortran compiler
+FC=gfortran
+FFLAGS = -O3 -cpp -fopenmp
+# end of GFORTRAN
 
 
 #
 # Intel ifort compiler (>V15)
-#
-FC=ifort
+# uncomment the following lines to compile with Intel
+# compiler
+# FC=ifort
 # debug with openmp
-#FFLAGS = -g -qopenmp -cpp -assume byterecl 
+#FFLAGS = -g -qopenmp -cpp -assume byterecl
 # debug without openmp
-#FFLAGS = -g -cpp -assume byterecl 
+#FFLAGS = -g -cpp -assume byterecl
 #
 # run without openmp
-#FFLAGS = -O3 -cpp -assume byterecl 
+# FFLAGS = -O3 -cpp -assume byterecl
 # run with openmp
-FFLAGS = -O3 -cpp -qopenmp -assume byterecl 
+# FFLAGS = -O3 -cpp -qopenmp -assume byterecl
+# end of ifort
 
 ################## END OF MODIFICATIONS *************************
 ################## Nothing to be changed below #################
