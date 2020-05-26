@@ -4,14 +4,18 @@ CFLAGS=
 
 #
 # GFORTRAN compiler
-#
+# uncomment the following lines to compile with gcc
+# fortran compiler
 FC=gfortran
 FFLAGS = -O3 -cpp -fopenmp
+# end of GFORTRAN
+
 
 #
 # Intel ifort compiler (>V15)
-#
-FC=ifort
+# uncomment the following lines to compile with Intel
+# compiler
+# FC=ifort
 # debug with openmp
 #FFLAGS = -g -qopenmp -cpp -assume byterecl
 # debug without openmp
@@ -20,7 +24,8 @@ FC=ifort
 # run without openmp
 #FFLAGS = -O3 -cpp -assume byterecl
 # run with openmp
-FFLAGS = -O3 -cpp -qopenmp -assume byterecl
+# FFLAGS = -O3 -cpp -qopenmp -assume byterecl
+# end of ifort
 
 ################## Nothing to be changed below #################
 .SUFFIXES: .o .f90
