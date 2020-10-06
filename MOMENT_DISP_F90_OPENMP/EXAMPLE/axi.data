@@ -1,5 +1,5 @@
  &input
- nc=1,nfreq=512,tl=70.,aw=2.,nr=5,ns=1,xl=1000000.,ikmax=100000,
+ nfreq=512,tl=70.,aw=2.,xl=1000000.,ikmax=100000,
  latlon=.true.,freesurface=.true.,sourcefile="source",statfile="station"
  //
   1000. 5000. 2886.  2700. 1000. 500.
