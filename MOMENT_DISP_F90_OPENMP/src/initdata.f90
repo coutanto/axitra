@@ -15,7 +15,20 @@
 !******************************************************************************
 module initdatam
 contains
-subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
+
+function mean(tab)
+implicit none
+real(kind=8) :: mean,tab(:)
+
+integer ::i
+  mean=0.d0
+  do i=1,size(tab)
+     mean=mean+tab(i)
+  enddo
+  mean=mean/size(tab)
+end function mean
+
+subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
 
    use dimension1
    use dimension2
@@ -27,18 +40,19 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
    integer      :: ir, ir1, ir2, ic, jr, jrr, js, jss, is, is1, is2, i, nr, ns, nc
    integer      :: rindex(nr), index(ns), ncs, ncr, nrs
    logical      :: tc
-   real(kind=8) :: hh, tmp, r(nr, ns)
+   real(kind=8) :: hh, tmp, r(nr, ns), rmax
 
 !++++++++++++
-!        Lecture coordonnees stations et recepteurs
+!        read stations and source coordinates
 !++++++++++++
-
    do is = 1, ns
       read (in2, *) index(is), xs(is), ys(is), zs(is)
    enddo
    do ir = 1, nr
       read (in3, *) rindex(ir), xr(ir), yr(ir), zr(ir)
    enddo
+
+
 
 !++++++++++++
 !        conversion interface -> epaisseur des couches
@@ -49,6 +63,8 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
          hc(ic) = hc(ic + 1) - hc(ic)
       enddo
    endif
+
+
 
 !++++++++++++
 !        on reordonne les sources par profondeur croissante
@@ -73,7 +89,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
    enddo
    rewind (in2)
    do is = 1, ns
-      write (in2,"(I10,3F15.3)") index(is), xs(is), ys(is), zs(is)
+         write (in2,"(I10,3F15.3)") index(is), xs(is), ys(is), zs(is)
    enddo
    close (in2)
 
@@ -169,12 +185,12 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
 
    rewind (in3)
    do ir = 1, nr
-      write (in3,"(I10,3F15.3)") rindex(ir), xr(ir), yr(ir), zr(ir)
+         write (in3,"(I10,3F15.3)") rindex(ir), xr(ir), yr(ir), zr(ir)
    enddo
    close (in3)
 
 !++++++++++
-! convert from lat-lon to km
+! convert from lat-lon to METER
 !++++++++++
    if (latlon) then
       call ll2km(xr, yr, nr, xs, ys, ns)
@@ -262,6 +278,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
 !         on ne garde que les distances differentes, stockees dans
 !         rr(). tableau d indirection irr().
 !++++++++++++
+   rmax=0.d0
    nrs = 0 !calcule dist. rad.
    do is = 1, ns
    do ir = 1, nr
@@ -269,6 +286,8 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
       r(ir, is) = sqrt((xr(ir) - xs(is))*(xr(ir) - xs(is)) + &
                        (yr(ir) - ys(is))*(yr(ir) - ys(is)))
       rr(nrs) = r(ir, is)
+      rmax=max(rmax,rr(nrs))
+
    enddo
    enddo
 

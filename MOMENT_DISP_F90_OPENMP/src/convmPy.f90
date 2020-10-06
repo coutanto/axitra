@@ -1,59 +1,79 @@
 
-!   PROGRAMME CONVM
+!   FUNCTION CONVMPY
 !
+!   Fortran version of convolution to be called from python
 !   Moment version
 !
 ! Convolution and output using output() routine
 ! All computations done in double float format(64bits)
-! but output is converted to 32bits
 !
-! convm read input files: <header>.data, <header>.res, <header>.hist, <header>.sou
-! where <header>='axi' or 'axi_???' and ??? is given as first argument to convm
-!
-! nsp = max number of sources
-! ncp = max number of layers
-! nrp = max number of receiver
-! ntp = max length(in points) for seismogram
 !******************************************************************************
 
 ! number of elementary source, 6 for moment, 3 for forces
-#define NSTYPE 6 
-program convm
+#define NSTYPE 6
+
+
+! Input
+! id: unique id for this computation used for all input/output name files
+! ics: source type
+! t0, t1: time co,nstant for the source type
+! icc: output unit, disp, vel or acc
+! Output
+! sx, sy, sz: seismograms along the three components
+! nsx, ntx: dimension for sx
+! n1y, n2y: dimension for sy
+! n1z, n2z: dimension for sz
+subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    use parameter
    use fsourcem
    implicit none
 
-   integer ntp, nrtp, icc, ics, ic, base, narg
+!f2py intent(in) ics,t0,t1,icc
+!f2py intent(in,out,overwrite,c) sx
+!f2py intent(in,out,overwrite,c) sy
+!f2py intent(in,out,overwrite,c) sz
+!f2py integer intent(hide),depend(sx) :: nsx=shape(sx,0), ntx=shape(sx,1)
+!f2py integer intent(hide),depend(sy) :: n1y=shape(sy,0), n2y=shape(sy,1)
+!f2py integer intent(hide),depend(sz) :: n1z=shape(sz,0), n2z=shape(sz,1)
 
-   character header*10, sourcefile*20, statfile*20, chan(3)*2,arg*10
 
-   integer:: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, index, indexin
+   integer :: nt,nstat,nsx,ntx,n1y,n2y,n1z,n2z
+   real(kind=8) :: sx(ntx,nsx),sy(n2y,n1y),sz(n2z,n1z)
+
+   integer ntp, nrtp, icc, ics, ic, base
+
+   character header*50, sourcefile*20, statfile*20, chan(3)*2
+   integer :: id
+   integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, index, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou,mt
+                       lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou
    complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, fs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
-   real(kind=4), allocatable :: sx(:), sy(:), sz(:)
    real(kind=4)              :: spas
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
 
-   namelist/input/ nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
+   namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
    dt0 = 0.
    chan(1) = 'X'
    chan(2) = 'Y'
    chan(3) = 'Z'
 
-! header if any
-   narg=iargc()
-   if (narg>0) then
-     call getarg(1,arg)
-     write(header,"('axi_',A)") trim(arg)
-   else
+!
+! header
+!
+   if (id<0) then
      header='axi'
+   else if (id<10) then
+     write(header,"('axi_',I1)") id
+   else if (id<100) then
+     write(header,"('axi_',I2)") id
+   else
+     write(header,"('axi_',I3)") id
    endif
 
 ! read binary results from axitra
@@ -62,11 +82,11 @@ program convm
 ! record length is 6 x (complex double precision) = 6 x 2 x 8 bytes
    open (12, access='direct', recl=NSTYPE*2*8, form='unformatted', file=trim(header)//'.res')
 
+
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
-! count number of layer
-write(0,*) '<',trim(header)//'.data','>'
    read (10, input)
+! count number of layer
    nc=0
    do while(.true.)
      read(10,*,end=91)
@@ -75,7 +95,7 @@ write(0,*) '<',trim(header)//'.data','>'
 91 rewind(10)
    read (10, input)
 
-   open (13, form='formatted', file=sourcefile)
+   open (13, form='formatted',file=sourcefile)
    open (14, form='formatted', file=statfile)
 ! count number of sources
    ns=0
@@ -89,7 +109,7 @@ write(0,*) '<',trim(header)//'.data','>'
    do while(.true.)
      read(14,*,end=93)
      nr=nr+1
-   end do
+    end do
 93 rewind(14)
 
 ! allocate space knowing number of sources, receivers and layers
@@ -103,56 +123,8 @@ write(0,*) '<',trim(header)//'.data','>'
    open (15, form='formatted', file=trim(header)//'.hist')
 
 ! + +++++++++++
-! read source function type from keyboard
+! output is displaement, velocity or accelaration
 ! + +++++++++++
-
-   write (6, *) 'source function?'
-   write (6, *) '0 : Dirac'
-   write (6, *) '1 : Ricker'
-   write (6, *) '2 : step '
-   write (6, *) '3 : function stored in file <axi.sou>'
-   write (6, *) '4 : triangle'
-   write (6, *) '5 : ramp'
-   write (6, *) '6 : not used....'
-   write (6, *) '7 : True step (watch high frequencies cutoff!!)'
-   write (6, *) '8 : Trapezoid'
-   read (5, *) ics
-   if (ics .eq. 8) then
-      write (6, *) "rise time t0 ?"
-      read (5, *) t0
-      write (6, *) "source process time t1 ? (total time = t1+t0)"
-      read (5, *) t1
-      t1 = t1 + t0
-   endif
-!   if (ics .eq. 6) then
-!      write (6, *) "rise time?"
-!      read (5, *) t0
-!      write (6, *) "rupture velocity(fract. of S wave eg. 0.8)?"
-!      read (5, *) rpvel
-!   endif
-   if (ics .eq. 1) then
-      write (6, *) "Ricker pseudo period?"
-      read (5, *) t0
-   endif
-   if (ics .eq. 2) then
-      write (6, *) "source duration?"
-      read (5, *) t0
-   endif
-
-   if (ics .eq. 4) then
-      write (6, *) "triangle width ?"
-      read (5, *) t0
-   endif
-   if (ics .eq. 5) then
-      write (6, *) "rise time?"
-      read (5, *) t0
-   endif
-
-   write (6, *) 'output is ?'
-   write (6, *) '1: displacement (m)'
-   write (6, *) '2: velocity (m/s)'
-   write (6, *) '3: acceleration (m/s/s)'
-   read (5, *) icc
    icc = icc - 1
 
 !++++++++++++
@@ -211,14 +183,16 @@ write(0,*) '<',trim(header)//'.data','>'
       call cmoment(mu(is), strike(is), dip(is), rake(is), disp(is), width(is)*length(is), a(1, is))
    enddo
 
+
 !++++++++++++
-!        Read Green's functions
+!        Lecture fonctions de transfert
 !++++++++++++
    xmm = log(real(nfreq))/log(2.)
    mm = int(xmm) + 1
    if (xmm-mm+1 >0) mm=mm+1
+
    nt = 2**mm
-   allocate (iwk(nt), sx(nt), sy(nt), sz(nt))
+   allocate (iwk(nt))
    allocate (ux(nt, nr), uy(nt, nr), uz(nt, nr))
    ux = 0.d0
    uy = 0.d0
@@ -238,23 +212,21 @@ write(0,*) '<',trim(header)//'.data','>'
      call fft2cd(fsou, mm, iwk)
 1960 continue
    endif
-   open (10, form='formatted', file=trim(header)//'.head')
-   read (10,*) xl,tl
 
    dfreq = 1./tl
    pas = tl/nt
    spas=sngl(pas)
    aw = -pi*aw/tl
-   mt=2**mm
-! loop over frequencies
 
+! loop over frequencies
+   open (10, form='formatted', file=trim(header)//'.head')
    do jf = 1, nfreq
       freq = float(jf - 1)/tl
       omega = cmplx(pi2*freq, aw)
       deriv = (ai*omega)**icc
 
       read (10, *, end=2000)
-      if (ics.eq.3) then
+      if (ics == 3) then
         fs=fsou(jf)
       else
         fs=fsource(ics, t0, omega, t1, pas)
@@ -267,7 +239,7 @@ write(0,*) '<',trim(header)//'.data','>'
 !            t1 = length(is)/rvel(is)
 !         endif
          us = fs*deriv*exp(-ai*omega*delay(is))
-         !us = fs !modifOC
+
          do ir = 1, nr ! loop over receiver
             base = (ir - 1)*3 + (is - 1)*3*nr + (jf - 1)*3*nr*ns
             read (12, rec=base + 1, err=2000) (uxf(it), it=1, NSTYPE)
@@ -286,9 +258,8 @@ write(0,*) '<',trim(header)//'.data','>'
             ux(jf, ir) = ux(jf, ir) + uux*us
             uy(jf, ir) = uy(jf, ir) + uuy*us
             uz(jf, ir) = uz(jf, ir) + uuz*us
-
-         enddo !end receiver loop
-      enddo !end source loop
+         enddo !fin boucle recepteur
+      enddo !fin boucle source
    enddo
 2000 continue
    if (jf < nfreq) then
@@ -296,14 +267,14 @@ write(0,*) '<',trim(header)//'.data','>'
    endif
 
 !++++++++++++
-!                compute time domain traces
+!                Calcul des sismogrammes
 !++++++++++++
 
    do ir = 1, nr
 
-!               fill-in symetric part of the spectrum
-!               reverse imaginery part to perform inverse FFT
-
+!                on complete le spectre pour les hautes frequences
+!               avec inversion du signe de la partie imaginaire pour
+!               la FFT inverse qui n existe pas avec fft2cd
       do jf = nt + 2 - nfreq, nt
          ux(jf, ir) = conjg(ux(nt + 2 - jf, ir))
          uy(jf, ir) = conjg(uy(nt + 2 - jf, ir))
@@ -316,20 +287,21 @@ write(0,*) '<',trim(header)//'.data','>'
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/tl!/mt modif OC
-
-         sx(it) = real(ux(it, ir)*cc)
-         sy(it) = real(uy(it, ir)*cc)
-         sz(it) = real(uz(it, ir)*cc)
+         cc = exp(-aw*tl*ck)/tl
+         sx(it,ir) = (ux(it, ir)*cc)
+         sy(it,ir) = (uy(it, ir)*cc)
+         sz(it,ir) = (uz(it, ir)*cc)
       enddo
 
-      call output(sx, rindex(ir), spas, nt, 11, chan(1))
-      call output(sy, rindex(ir), spas, nt, 11, chan(2))
-      call output(sz, rindex(ir), spas, nt, 11, chan(3))
-
    enddo
+   close(10)
+   close(12)
+   close(13)
+   close(14)
+   close(15)
+   close(16)
 
-   stop
+   
 end
 
 subroutine cmoment(mu, strike, dip, rake, disp, surf, a)

@@ -2,31 +2,28 @@
 
 CC=icc		#	C Compiler
 CFLAGS=-O3 	# 	and its options
-
 #
 # GFORTRAN compiler
-# uncomment the following lines to compile with gcc
-# fortran compiler
-FC=gfortran
-FFLAGS = -O3 -cpp -fopenmp
-# end of GFORTRAN
-
+#
+ FC=gfortran
+ F2PY=-lgomp --opt="-Ofast -march=native" --f90flags="-fopenmp -cpp"
+ FFLAGS = -Ofast -cpp -fopenmp
 
 #
 # Intel ifort compiler (>V15)
-# uncomment the following lines to compile with Intel
-# compiler
-# FC=ifort
+#
+#FC=ifort
+#F2PY=-L/opt/intel/compilers_and_libraries_2017.4.181/mac/compiler/lib -liomp5 --f90flags="-qopenmp -fpp"
 # debug with openmp
-#FFLAGS = -g -qopenmp -cpp -assume byterecl
+#FFLAGS = -g -qopenmp -fpp -assume byterecl 
 # debug without openmp
-#FFLAGS = -g -cpp -assume byterecl
+#FFLAGS = -g -fpp -assume byterecl 
 #
 # run without openmp
-# FFLAGS = -O3 -cpp -assume byterecl
+#FFLAGS = -O3 -fpp -assume byterecl 
 # run with openmp
-# FFLAGS = -O3 -cpp -qopenmp -assume byterecl
-# end of ifort
+#FFLAGS = -O3 -fpp -qopenmp -assume byterecl 
+
 
 ################## END OF MODIFICATIONS *************************
 ################## Nothing to be changed below #################
@@ -62,8 +59,15 @@ convms: $(OBJ2) writesac.o
 #			CLEAN, TAR, ...
 ######################################
 clean: 
-	- $(RM) *.o *.mod *.a axitra convm convms 2>/dev/null
+	$(RM) *.o *.mod *.a *.so axitra convm convms 2>/dev/null
 
+all: axitra convms
+	
 tar:	
 	tar cvf axitra.tar * ;gzip axitra.tar\
 
+######################################
+#			PYTHON
+######################################
+python: parameter.o fft2cd.o fsource.o dll2km.o 
+	f2py -c -m convmPy  -DF2PY_REPORT_ON_ARRAY_COPY=1 $(F2PY) convmPy.f90 fft2cd.o fsource.o dll2km.o

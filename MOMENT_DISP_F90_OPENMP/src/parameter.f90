@@ -25,18 +25,18 @@ module parameter
    parameter(ikmin=100)
 
 ! explim= exponent lower limit
-! needs to be adjuest when running with single precision float number
+! needs to be adjusted when running with single precision float number
    real(kind=8) :: explim, elim
    parameter(explim=-300., elim=1.d-300)
 
 ! bessel functions are stored up to nkmax wavenumber iterations.
 ! the larger, the faster, but needs more memory
    integer :: nkmax
-   parameter(nkmax=3)
+   parameter(nkmax=0)
 
 ! convergence relative error
    real(kind=8) :: rerr
-   parameter(rerr=1.e-5)
+   parameter(rerr=1.e-4)
 
 ! reference frequency for attenuation
    real(kind=8) :: fref

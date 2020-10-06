@@ -10,7 +10,7 @@
 !**************************************************************
 module reflect3m
 contains
-subroutine reflect3(ncs)
+subroutine reflect3(ncs, uflow)
 
    use parameter
    use dimension1
@@ -26,6 +26,8 @@ subroutine reflect3(ncs)
 
    complex(kind=8) :: cu1(2), cd1(2), cu2(2), cd2(2), cu3(2), cd3(2)
    complex(kind=8) :: cu4(2), cd4(2), rup(2, 2), rdo(2, 2)
+
+   logical         :: uflow
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !
@@ -130,11 +132,19 @@ subroutine reflect3(ncs)
          zsc = zs(izss(1, is2, is1))
          is0 = izss(1, is2, is1)
          arg = -ai*cgam(ic)*zsc
-         if (real(arg) .lt. explim) arg = cmplx(explim, imag(arg))
-         egam = exp(arg)
+         if (real(arg) .lt. explim) then
+             egam=0.d0
+             uflow=.true.
+         else
+             egam = exp(arg)
+         endif
          arg = -ai*cnu(ic)*zsc
-         if (real(arg) .lt. explim) arg = cmplx(explim, imag(arg))
-         enu = exp(arg)
+         if (real(arg) .lt. explim) then
+            uflow=.true.
+            enu=0.d0
+         else
+            enu = exp(arg)
+         endif
 
 !                        Source PHI
          cu1(1) = enu + rup(1, 1)/enu
@@ -156,6 +166,7 @@ subroutine reflect3(ncs)
          cu4(2) = -egam + rup(2, 2)/egam
          cd4(1) = -rdo(1, 2)*egam
          cd4(2) = 1./egam - rdo(2, 2)*egam
+
 !                        Source KHI
          cu1sh = egam + rupsh/egam
          cd1sh = 1./egam + rdosh*egam

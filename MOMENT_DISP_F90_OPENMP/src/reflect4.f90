@@ -13,7 +13,8 @@
 !*************************************************************************
 module reflect4m
 contains
-subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr)
+
+subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
    use dimension1
    use dimension2
    use parameter
@@ -21,6 +22,7 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr)
 
    integer :: nc, nr, ns, ncs,ncr
    integer :: jf, ik
+   logical :: uflow
 ! Global
 !      include "parameter.inc90"
 !      include "dimension1.inc90"
@@ -206,6 +208,7 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr)
 
                   pdsh(2) = ftdosh(ic)*sd2sh(is0)
                   push(2) = mtsh(ic)*pdsh(2)
+
                endif
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -234,12 +237,21 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr)
 !                les ondes PHI, PSI et KHI
 
                arg = -ai*cgam(ic)*zc
-               if (dble(arg) .lt. explim) arg = cmplx(explim, imag(arg))
-               egam = exp(arg)
+               if (dreal(arg) .lt. explim)  then
+                   uflow=.true.
+                   egam=0.d0
+               else
+                   egam = exp(arg)
+               endif
                egaminv = 1./egam
                arg = -ai*cnu(ic)*zc
-               if (dble(arg) .lt. explim) arg = cmplx(explim, imag(arg))
-               enu = exp(arg)
+               if (dreal(arg) .lt. explim)  then
+                   uflow=.true.
+                   arg = cmplx(0.d0, dimag(arg))
+                   egam=0.d0
+               else
+                   enu=exp(arg)
+               endif
                enuinv = 1./enu
 
 !                termes sources

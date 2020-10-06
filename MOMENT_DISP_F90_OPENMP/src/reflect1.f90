@@ -24,7 +24,7 @@
 !******************************************************************************
 module reflect1m
 contains
-subroutine reflect1(freeSurface,nc)
+subroutine reflect1(freeSurface,nc,uflow)
 
    use parameter
    use dimension1
@@ -33,11 +33,13 @@ subroutine reflect1(freeSurface,nc)
    implicit none
    logical :: freeSurface
 
-   integer          :: ic, ic1,nc
-   real(kind=8)     :: aki, adeph, rdeph
+   integer         :: ic, ic1,nc
+   real(kind=8)    :: aki
    complex(kind=8) :: coef, cf1, cf2, cf3, cdd, cnurho, cgarho, cnugam, cb1, cb2, ckb2i1, ckb2i2
    complex(kind=8) :: ca1d, ca2d, ca, cb, cc, cd, ce, cf, cg, ch, cgkr2, chkr2, cdd2, cs1, cs2, cdelt
-   complex(kind=8) :: ctmp1, ctmp2, ctmp3, ctmp4, ctmp5, ctmp6, ctmp7, ctmp8, ctmp9, ctmp10, cdeph
+   complex(kind=8) :: ctmp1, ctmp2, ctmp3, ctmp4, ctmp5, ctmp6, ctmp7, ctmp8, ctmp9, ctmp10, arg
+   logical         :: uflow
+
 ! Coefficient pour la convention sur PSI (coef) et sur la TF (aki=-1.)
    coef = 1./ai
    aki = -1.
@@ -46,37 +48,37 @@ subroutine reflect1(freeSurface,nc)
 !               de reflexion/transmission
 !      2 possibilites : 1) surface libre
 !                       2) 1/2 espace sup. infini 
-
+   ru=0.d0;rd=0.d0;tu=0.d0;td=0.d0
 !A1                    SURFACE LIBRE
    if (freeSurface) then
       cf1 = (ckb2(1) - 2.*kr2)
       cf2 = cf1*cf1
-      cf3 = 4.*cnu(1)*kr2*cgam(1)
-      cdd = 1./(cf2 + cf3)
+      cf3 = 4.d0*cnu(1)*kr2*cgam(1)
+      cdd = 1.d0/(cf2 + cf3)
 
       ru(1, 1, 1) = (-cf2 + cf3)*cdd
-      ru(1, 2, 1) = 4.*cnu(1)*cf1*cdd*coef*aki
+      ru(1, 2, 1) = 4.d0*cnu(1)*cf1*cdd*coef*aki
       ru(1, 2, 2) = (cf2 - cf3)*cdd*aki
-      ru(1, 1, 2) = 4.*kr2*cgam(1)*cf1*cdd*ai
-      tu(1, 1, 1) = 0.
-      tu(1, 1, 2) = 0.
-      tu(1, 2, 1) = 0.
-      tu(1, 2, 2) = 0.
-      rush(1) = 1.
-      tush(1) = 0.
+      ru(1, 1, 2) = 4.d0*kr2*cgam(1)*cf1*cdd*ai
+      tu(1, 1, 1) = 0.d0
+      tu(1, 1, 2) = 0.d0
+      tu(1, 2, 1) = 0.d0
+      tu(1, 2, 2) = 0.d0
+      rush(1) = 1.d0
+      tush(1) = 0.d0
    else
 
 !B1                   1/2 ESPACE SUP. INFINI
-      ru(1, 1, 1) = 0.
-      ru(1, 2, 1) = 0.
-      ru(1, 2, 2) = 0.
-      ru(1, 1, 2) = 0.
-      tu(1, 1, 1) = 1.
-      tu(1, 1, 2) = 0.
-      tu(1, 2, 1) = 0.
-      tu(1, 2, 2) = 1.
-      rush(1) = 0.
-      tush(1) = 1.
+      ru(1, 1, 1) = 0.d0
+      ru(1, 2, 1) = 0.d0
+      ru(1, 2, 2) = 0.d0
+      ru(1, 1, 2) = 0.d0
+      tu(1, 1, 1) = 1.d0
+      tu(1, 1, 2) = 0.d0
+      tu(1, 2, 1) = 0.d0
+      tu(1, 2, 2) = 1.d0
+      rush(1) = 0.d0
+      tush(1) = 1.d0
    endif
 
 !               Coefficients aux interfaces entre couches
@@ -84,17 +86,17 @@ subroutine reflect1(freeSurface,nc)
    cgarho = cgam(1)*rho(1)
    cnugam = cnu(1)*cgam(1)
    cb2 = kr2/ckb2(1)
-   ckb2i2 = 1./ckb2(1)
+   ckb2i2 = 1.d0/ckb2(1)
 
    do ic = 2, nc
 
       ic1 = ic - 1
       ckb2i1 = ckb2i2
-      ckb2i2 = 1./ckb2(ic)
+      ckb2i2 = 1.d0/ckb2(ic)
       cb1 = cb2
       cb2 = kr2*ckb2i2
-      ca1d = rho(ic1)*(1.-2.*cb1)
-      ca2d = rho(ic)*(1.-2.*cb2)
+      ca1d = rho(ic1)*(1.d0-2.d0*cb1)
+      ca2d = rho(ic)*(1.d0-2.d0*cb2)
       ca = ca2d-ca1d
       cb = ca2d+2.*rho(ic1)*cb1
       cc = ca1d+2.*rho(ic)*cb2
@@ -105,8 +107,8 @@ subroutine reflect1(freeSurface,nc)
       cgkr2 = cg*kr2
       ch = ca - cd*cnu(ic)*cgam(ic1)
       chkr2 = ch*kr2
-      cdd = 1./(ce*cf + cg*chkr2)
-      cdd2 = 2.*cdd
+      cdd = 1.d0/(ce*cf + cg*chkr2)
+      cdd2 = 2.d0*cdd
 
       ctmp2 = cnurho*cdd2
       ctmp3 = cgarho*cdd2
@@ -141,29 +143,37 @@ subroutine reflect1(freeSurface,nc)
       tu(ic, 2, 1) = -ctmp5*cg*coef
 
 !   Modification pour calculateur a faible dynamique [1.e-300; 1.e+300]
-      cdeph = exp(-ai*cnu(ic1)*hc(ic1))
-      rdeph = real(cdeph)
-      adeph = imag(cdeph)
-      if (abs(rdeph) .lt. elim) rdeph = 0.
-      me1(ic1) = cmplx(rdeph, adeph)
+      arg   = -ai*cnu(ic1)*hc(ic1)
+      if (dreal(arg) .lt. explim) then !exp(-inf)*exp(i*theta)=0.
+         uflow=.true.
+         me1(ic1)=0.d0
+      else
+         me1(ic1) = exp(arg)
+      endif
+      arg   = -ai*cgam(ic1)*hc(ic1)
+      if (dreal(arg) .lt. explim) then
+        uflow=.true.
+        me2(ic1) = 0.d0
+      else
+        me2(ic1) = exp(arg)
+      endif
 
-      cdeph = exp(-ai*cgam(ic1)*hc(ic1))
-      rdeph = real(cdeph)
-      adeph = imag(cdeph)
-      if (abs(rdeph) .lt. elim) rdeph = 0.
-      me2(ic1) = cmplx(rdeph, adeph)
 
       cs1 = rho(ic1)*ckb2i1*cgam(ic1)
       cs2 = rho(ic)*ckb2i2*cgam(ic)
-      cdelt = 1./(cs1 + cs2)
+      cdelt = 1.d0/(cs1 + cs2)
 
       rush(ic) = (cs2 - cs1)*cdelt
       rdsh(ic) = -rush(ic)
-      tush(ic) = 2.*cs2*cdelt
-      tdsh(ic) = 2.*cs1*cdelt
+      tush(ic) = 2.d0*cs2*cdelt
+      tdsh(ic) = 2.d0*cs1*cdelt
 
    end do
-
+!write (6,*) ru(1,:,:),ru(2,:,:)
+!write(6,*) rd(1,:,:), rd(2,:,:)
+!write(6,*) tu(1,:,:), tu(2,:,:)
+!write(6,*) td(1,:,:), td(2,:,:)
+!write(6,*)
    return
 end
 end module
