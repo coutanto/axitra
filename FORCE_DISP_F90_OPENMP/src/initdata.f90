@@ -1,4 +1,3 @@
-! @(#) initdata.F        AXITRA 4.15     9/22/97 4
 !******************************************************************************
 !*                                                                            *
 !*                     SUBROUTINE INITDATA                                    *
@@ -14,8 +13,22 @@
 !*    Modified:
 !*           hc
 !******************************************************************************
+module initdatam
+contains
 
-subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
+function mean(tab)
+implicit none
+real(kind=8) :: mean,tab(:)
+
+  integer ::i
+  mean=0.d0
+  do i=1,size(tab)
+    mean=mean+tab(i)
+  enddo
+  mean=mean/size(tab)
+  end function mean
+
+subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
 
    use dimension1
    use dimension2
@@ -27,7 +40,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
    integer      :: ir, ir1, ir2, ic, jr, jrr, js, jss, is, is1, is2, i, nr, ns, nc
    integer      :: rindex(nr), index(ns), ncs, ncr, nrs
    logical      :: tc
-   real(kind=8) :: hh, tmp, r(nr, ns)
+   real(kind=8) :: hh, tmp, r(nr, ns), rmax
 
 !++++++++++++
 !        Lecture coordonnees stations et recepteurs
@@ -263,12 +276,14 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
 !         rr(). tableau d indirection irr().
 !++++++++++++
    nrs = 0 !calcule dist. rad.
+   rmax=0.d0
    do is = 1, ns
    do ir = 1, nr
       nrs = nrs + 1
       r(ir, is) = sqrt((xr(ir) - xs(is))*(xr(ir) - xs(is)) + &
                        (yr(ir) - ys(is))*(yr(ir) - ys(is)))
       rr(nrs) = r(ir, is)
+      rmax=max(rr(nrs),rmax)
    enddo
    enddo
 
@@ -317,3 +332,4 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
 
    return
 end
+end module initdatam

@@ -24,7 +24,7 @@
 module reflect1m
 
 contains
-subroutine reflect1(freesurface, nc)
+subroutine reflect1(freesurface, nc, uflow)
 
    use parameter
    use dimension1
@@ -32,13 +32,13 @@ subroutine reflect1(freesurface, nc)
 
    implicit none
 
-   logical :: freesurface
+   logical :: freesurface,uflow
    integer :: nc
 
-   integer :: ic
-   complex(kind=8) :: coef, cf1, cf2, cf3, cdd, ca, cb, cb1, cb2, ca1d
+   integer :: ic,ic1
+   complex(kind=8) :: coef, cf1, cf2, cf3, cdd, ca, cb, cb1, cb2, ca1d, arg
    complex(kind=8) :: ca2d, cc, cd, ce, cf, cg, ch, cdeph, cs1, cs2, cdelt
-   real(kind=8) :: aki, rdeph, rdepth, adeph
+   real(kind=8) :: aki
 ! Coefficient pour la convention sur PSI (coef) et sur la TF (aki=-1.)
    coef = 1./ai
    aki = -1.
@@ -47,7 +47,7 @@ subroutine reflect1(freesurface, nc)
 !               de reflexion/transmission
 !      2 possibilites : 1) surface libre
 !                       2) 1/2 espace sup. infini
-
+   ru=0.d0;rd=0.d0;tu=0.d0;td=0.d0
 !A1                    SURFACE LIBRE
    if (freesurface) then
 
@@ -85,58 +85,56 @@ subroutine reflect1(freesurface, nc)
 
    do ic = 2, nc
 
-      cb1 = kr2/ckb2(ic - 1)
+      ic1 = ic -1
+      cb1 = kr2/ckb2(ic1)
       cb2 = kr2/ckb2(ic)
-      ca1d = rho(ic - 1)*(1.-2.*cb1)
+      ca1d = rho(ic1)*(1.-2.*cb1)
       ca2d = rho(ic)*(1.-2.*cb2)
       ca = ca2d-ca1d
-      cb = ca2d+2.*rho(ic - 1)*cb1
+      cb = ca2d+2.*rho(ic1)*cb1
       cc = ca1d+2.*rho(ic)*cb2
-      cd = 2.*(rho(ic)/ckb2(ic) - rho(ic - 1)/ckb2(ic - 1))
-      ce = cb*cnu(ic - 1) + cc*cnu(ic)
-      cf = cb*cgam(ic - 1) + cc*cgam(ic)
-      cg = ca - cd*cnu(ic - 1)*cgam(ic)
-      ch = ca - cd*cnu(ic)*cgam(ic - 1)
+      cd = 2.*(rho(ic)/ckb2(ic) - rho(ic1)/ckb2(ic1))
+      ce = cb*cnu(ic1) + cc*cnu(ic)
+      cf = cb*cgam(ic1) + cc*cgam(ic)
+      cg = ca - cd*cnu(ic1)*cgam(ic)
+      ch = ca - cd*cnu(ic)*cgam(ic1)
       cdd = ce*cf + cg*ch*kr2
 
-      rd(ic, 1, 1) = (cf*(cb*cnu(ic - 1) - cc*cnu(ic)) - ch*kr2*(ca + cd*cnu(ic - 1)*cgam(ic)))/cdd
-      rd(ic, 1, 2) = -2.*kr2*cgam(ic - 1)*(ca*cb + cc*cd*cnu(ic)*cgam(ic))/cdd/coef*aki
-      rd(ic, 2, 2) = -(ce*(cb*cgam(ic - 1) - cc*cgam(ic)) - cg*kr2*(ca + cd*cnu(ic)*cgam(ic - 1)))/cdd*aki
-      rd(ic, 2, 1) = -2.*cnu(ic - 1)*(ca*cb + cc*cd*cnu(ic)*cgam(ic))/cdd*coef
-      td(ic, 1, 1) = 2.*rho(ic - 1)*cnu(ic - 1)*cf/cdd
-      td(ic, 1, 2) = -2.*rho(ic - 1)*cgam(ic - 1)*cg*kr2/cdd/coef*aki
-      td(ic, 2, 2) = 2.*rho(ic - 1)*cgam(ic - 1)*ce/cdd
-      td(ic, 2, 1) = 2.*rho(ic - 1)*cnu(ic - 1)*ch/cdd*coef*aki
+      rd(ic, 1, 1) = (cf*(cb*cnu(ic1) - cc*cnu(ic)) - ch*kr2*(ca + cd*cnu(ic1)*cgam(ic)))/cdd
+      rd(ic, 1, 2) = -2.*kr2*cgam(ic1)*(ca*cb + cc*cd*cnu(ic)*cgam(ic))/cdd/coef*aki
+      rd(ic, 2, 2) = -(ce*(cb*cgam(ic1) - cc*cgam(ic)) - cg*kr2*(ca + cd*cnu(ic)*cgam(ic1)))/cdd*aki
+      rd(ic, 2, 1) = -2.*cnu(ic1)*(ca*cb + cc*cd*cnu(ic)*cgam(ic))/cdd*coef
+      td(ic, 1, 1) = 2.*rho(ic1)*cnu(ic1)*cf/cdd
+      td(ic, 1, 2) = -2.*rho(ic1)*cgam(ic1)*cg*kr2/cdd/coef*aki
+      td(ic, 2, 2) = 2.*rho(ic1)*cgam(ic1)*ce/cdd
+      td(ic, 2, 1) = 2.*rho(ic1)*cnu(ic1)*ch/cdd*coef*aki
 
-      ru(ic, 1, 1) = -(cf*(cb*cnu(ic - 1) - cc*cnu(ic)) + cg*kr2*(ca + cd*cnu(ic)*cgam(ic - 1)))/cdd
-      ru(ic, 1, 2) = 2.*kr2*cgam(ic)*(ca*cc + cb*cd*cnu(ic - 1)*cgam(ic - 1))/cdd/coef
-      ru(ic, 2, 2) = (ce*(cb*cgam(ic - 1) - cc*cgam(ic)) + ch*kr2*(ca + cd*cnu(ic - 1)*cgam(ic)))/cdd*aki
-      ru(ic, 2, 1) = 2.*cnu(ic)*(ca*cc + cb*cd*cnu(ic - 1)*cgam(ic - 1))/cdd*coef*aki
+      ru(ic, 1, 1) = -(cf*(cb*cnu(ic1) - cc*cnu(ic)) + cg*kr2*(ca + cd*cnu(ic)*cgam(ic1)))/cdd
+      ru(ic, 1, 2) = 2.*kr2*cgam(ic)*(ca*cc + cb*cd*cnu(ic1)*cgam(ic1))/cdd/coef
+      ru(ic, 2, 2) = (ce*(cb*cgam(ic1) - cc*cgam(ic)) + ch*kr2*(ca + cd*cnu(ic1)*cgam(ic)))/cdd*aki
+      ru(ic, 2, 1) = 2.*cnu(ic)*(ca*cc + cb*cd*cnu(ic1)*cgam(ic1))/cdd*coef*aki
       tu(ic, 1, 1) = 2.*rho(ic)*cnu(ic)*cf/cdd
       tu(ic, 1, 2) = 2.*rho(ic)*cgam(ic)*ch*kr2/cdd/coef
       tu(ic, 2, 2) = 2.*rho(ic)*cgam(ic)*ce/cdd
       tu(ic, 2, 1) = -2.*rho(ic)*cnu(ic)*cg/cdd*coef
 
 !   Modification pour calculateur a faible dynamique [1.e-300; 1.e+300]
+      arg = -ai*cnu(ic1)*hc(ic1)
+      if (dreal(arg) .lt. explim) then !exp(-inf)*exp(i*theta)=0.
+         uflow=.true.
+         me1(ic1)=0.d0
+      else
+         me1(ic1) = exp(arg)
+      endif
+      arg   = -ai*cgam(ic1)*hc(ic1)
+      if (dreal(arg) .lt. explim) then
+        uflow=.true.
+        me2(ic1) = 0.d0
+      else
+        me2(ic1) = exp(arg)
+      endif
 
-      cdeph = exp(-ai*cnu(ic - 1)*hc(ic - 1))
-      rdeph = real(cdeph)
-      adeph = imag(cdeph)
-      if (abs(rdeph) .lt. 1.e-30) rdepth = 0.
-      me1(ic - 1) = cmplx(rdeph, adeph)
-
-      cdeph = exp(-ai*cgam(ic - 1)*hc(ic - 1))
-      rdeph = real(cdeph)
-      adeph = imag(cdeph)
-      if (abs(rdeph) .lt. 1.e-30) rdepth = 0.
-      me2(ic - 1) = cmplx(rdeph, adeph)
-
-!   Version normal (ex Cray)
-
-!     me1(ic-1)=exp(-ai*cnu(ic-1)*hc(ic-1))
-!     me2(ic-1)=exp(-ai*cgam(ic-1)*hc(ic-1))
-
-      cs1 = rho(ic - 1)/ckb2(ic - 1)*cgam(ic - 1)
+      cs1 = rho(ic1)/ckb2(ic1)*cgam(ic1)
       cs2 = rho(ic)/ckb2(ic)*cgam(ic)
       cdelt = cs1 + cs2
 

@@ -21,6 +21,7 @@ program axitra
    use dimension1
    use dimension2
    use parameter
+   use initdatam
    use allocateArraym
    use reflect0m
    use reflect1m
@@ -38,42 +39,75 @@ program axitra
 
    implicit none
 
-   character(len=20)    :: sourcefile, statfile
+   character(len=20)    :: sourcefile, statfile, header, arg
    integer              :: ic, ir, is, nfreq, ikmax, ncp, jf, ik, lastik
    integer              :: nrs ! number of receiver radial distance
    integer              :: ncr ! number of layer containing a receiver
    integer              :: ncs ! number of layer containing a source
 
-   integer              :: nr, ns, nc
+   integer              :: nr, ns, nc, narg
    real(kind=8)         :: dfreq, freq, pil
-   logical              :: latlon, freesurface
+   logical              :: latlon, freesurface, uflow1, uflow3, uflow4
    logical, allocatable :: tconv(:, :)
-   real(kind=8)         :: rw, aw, phi, zom, tl, xl
+   real(kind=8)         :: rw, aw, phi, zom, tl, xl, rmax, vmean
+   namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
-
-   namelist/input/nc, nfreq, tl, aw, nr, ns, xl, ikmax, latlon, freesurface, sourcefile, statfile
+   uflow1=.false.
+   uflow3=.false.
+   uflow4=.false.
 
 #include "version.h"
    write(0,*) 'running axitra '//VERSION
 
-
-!++++++++++
-!           LECTURE DES PARAMETRES D'ENTREE
 !
-!               sismogramme : nfreq,tl,xl
-!               recepteurs  : nr,xr(),yr(),zr()
-!               source      : xs,ys,zs
-!               modele      : nc,hc(),vp(),vs(),rho()
+! read header if any
 !
-!               si hc(1)=0 on donne les profondeurs des interfaces, sinon
-!               on donne les epaisseurs des couches
+   narg=iargc()
+   if (narg>0) then
+     call getarg(1,arg)
+     write(header,"('axi_',A)") trim(arg)
+   else
+     header='axi'
+   endif
+!++++++++++
+!           Read input parameter from <header>.data
+!           <header>.head is used later to know the exact number of frequency
+!           actually computed
+!
 !++++++++++
 
-   open (in1, form='formatted', file='axi.data')
-   open (out, form='formatted', file='axi.head')
-   open (12, form='unformatted', file='axi.res')
-   rewind (out)
+   open (in1, form='formatted', file=trim(header)//'.data')
+   open (out, form='formatted', file=trim(header)//'.head')
+
+! count number of layer
    read (in1, input)
+   nc=0
+   do while(.true.)
+     read(in1,*,end=91)
+     nc=nc+1
+   end do
+91 rewind(in1)
+   read (in1, input)
+
+   open (in2, form='formatted', file=sourcefile)
+   open (in3, form='formatted', file=statfile)
+
+! count number of sources
+   ns=0
+   do while(.true.)
+     read(in2,*,end=92)
+     ns=ns+1
+   end do
+92 rewind(in2)
+! count number of receiver
+   nr=0
+   do while(.true.)
+     read(in3,*,end=93)
+     nr=nr+1
+    end do
+93 rewind(in3)
+
+   write(6,*) ' with ',ns,'source(s) and ',nr,'receiver(s) and ',nc,'layer(s)'
    if (freesurface) then
       write(6,*) '................. with a free surface at depth Z=0'
    else
@@ -86,13 +120,35 @@ program axitra
       read (in1, *) hc(ic), vp(ic), vs(ic), rho(ic), qp(ic), qs(ic)
    enddo
 
-   open (in2, form='formatted', file=sourcefile)
-   open (in3, form='formatted', file=statfile)
+!
+! check unit, m or km?
+! if average seismic velocities are < 20 (no dimension number)
+! assume km/s velocities
+!
+   vmean=(mean(vp)+mean(vs))/2.d0
+   if (vmean<20.d0) then ! assume velocities are in km / sec
+     write(6,*) 'distance unit is detected as Kilometer (average velocity values < 20)'
+     if (mean(rho) > 1) then
+       write(6,*) 'Inconsistent density unit, must be Kg/km^3 and be of the order of 10-6'
+       call exit(1)
+     end if
+   else
+     write(6,*) 'distance unit is detected as meter'
+     if (mean(rho) < 1) then
+        write(6,*) 'Inconsistent density unit, must be Kg/m^3 and be of the order of 10+3'
+       call exit(1)
+     end if
+   endif
+   if (latlon .and. vmean<20.d0) then
+     write(6,*) 'inconsistent velocity units when coordinates are in latitude/longitude'
+     write(6,*) 'expect velocity as meter/sec and depth in meter'
+     call exit(1)
+   endif
 
 ! We assume here that record length is given in byte.
 ! For intel compiler, it means using "assume byterecl" option
 ! record length is 3(forces) x 3(comp.) x (complex double precision) = 9 x 2 x 8 bytes
-   open (out2, access='direct', recl=9*2*8*nr*ns, form='unformatted', file='axi.res')
+   open (out2, access='direct', recl=9*2*8*nr*ns, form='unformatted', file=trim(header)//'.res')
 ! these additionnal options may help increasing IO when using ifort
 !        buffered='yes',buffercount=24)
 
@@ -100,7 +156,10 @@ program axitra
 !           INITIALISATIONS
 !++++++++++
 
-   call initdata(latlon, nr, ns, nc, ncr, ncs, nrs)
+   call initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
+
+   if (xl<=0.d0 .or. tl<=0.d0) call estimateParameter(xl,tl,rmax,vp,vs,nc)
+   write(out,*) xl,tl
 
    uconv = rerr*rerr
    dfreq = 1./tl
@@ -177,7 +236,7 @@ program axitra
 !               Matrice de Reflection/Transmission et Dephasage
 !+++++++++++++
 
-         call reflect1(freesurface, nc)
+         call reflect1(freesurface, nc, uflow1)
 
 !+++++++++++++
 !              Calcul des matrices de reflectivite : mt(),mb(),nt(),nb()
@@ -193,14 +252,14 @@ program axitra
 !                de chaque couche
 !+++++++++++++
 
-         call reflect3(ncs)
+         call reflect3(ncs, uflow3)
 
 !+++++++++++++
 !               Calcul des potentiels et des deplacement dus aux sources du
 !                tenseur, en chaque recepteur (termes en kr, r, z)
 !+++++++++++++
 
-         call reflect4(jf, ik, ik .gt. ikmin, tconv, nc, nr, ns, ncs, ncr)
+         call reflect4(jf, ik, ik .gt. ikmin, tconv, nc, nr, ns, ncs, ncr,uflow4)
 
          if (ttconv) exit
 
@@ -220,12 +279,59 @@ program axitra
       call reflect5(jf, nr, ns)
 
       if (ik .ge. ikmax) then
-         write (6, *) 'Depassement du nombre d iteration maximum'
-         stop
+         write (0, *) 'Abort: reached max iteration number for frequency ',freq
+         if (uflow4 .or. uflow1 .or. uflow3) then
+            write(0,*) 'Since underflow occured, consider introducing a fictituous layer'
+            write(0,*) 'to reduce the vertical distance between the top of the layer and '
+            write(0,*) 'the source/receiver depth'
+            write(0,*) 'uflow',uflow1,uflow3,uflow4
+            call exit(2)
+         else
+            call exit(1)
+         endif
       endif
 
    enddo ! frequency loop
 !$OMP END PARALLEL
    write(6,*) 'Done'
-   stop
+   call exit(0)
 end
+!
+! estimate tl and/or xl parameter in case they were not given by user
+!
+
+subroutine estimateParameter(xl,tl,rmax,vp,vs,nc)
+implicit none
+real(kind=8) :: xl,tl,rmax,vp(nc),vs(nc)
+integer      :: nc
+
+integer      :: i
+real(kind=8) :: vmax,vmin
+
+vmax=vp(1)
+vmin=vs(1)
+do i=2,nc
+vmax=max(vmax,vp(i))
+vmin=min(vmin,vs(i))
+enddo
+
+! estimate a duration
+! we need at least the time needed to travel
+! along the largest distance at the lowest velocity
+vmin=0.8d0*vmin
+if (tl<=0.d0) then
+tl=rmax/vmin
+tl=(int(tl/5.d0)+1)*5.d0
+write(6,*) 'duration tl set automatically to ',tl,'sec'
+endif
+
+! estimate a radial periodicity
+! source are located with a xl periodicity
+! To avoid the effect of periodic sources during the
+! tl duration, we need:
+if (xl<=0.d0) then
+xl = 1.2d0*rmax + vmax*tl
+xl=(int(xl/10.d0)+1)*10.d0
+write(6,*) 'periodicity xl set automatically to ',xl,'(k)m'
+endif
+end subroutine

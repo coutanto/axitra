@@ -28,22 +28,28 @@ function	fsource (type, t0, omega, t1, dt)
 	real rand
 	real(kind=8)		:: uur,uui,trise,trupt
 	complex(kind=8)	:: fsource,uu,uex,uxx,omega,shx
+    real(kind=8),parameter    :: two=2.d0
 
 !       write(0,*) type, omega, t0, t1, dt
 ! TYPE=0               Source = Dirac en deplacement
         if (type.eq.0) then
-          fsource=1
+          fsource=dt
         endif
  
 ! TYPE=1        Source = Ricker en deplacement
         if (type.eq.1) then
-          uu=omega*t0
-          uu=uu*uu/pi2/pi2
-          uu=exp(-uu)
-          uu=omega*omega*uu*dt
-	      fsource= uu
+          !uu=omega*t0
+          !uu=uu*uu/pi2/pi2
+          !uu=exp(-uu)
+          !uu=omega*omega*uu*dt
+	      !fsource= uu
+          uu=t0*omega/two
+          uu=exp(-uu*uu)
+          uu=uu*t0*sqrt(pi)
+          uu=uu*omega*omega*t0*t0/two
+          fsource=uu
         endif
- 
+
 ! TYPE=2        Source = step en deplacement
 !		2 steps possibles (1) real=1/(ai*omega)
 !				  (2) bouchon s
@@ -65,13 +71,6 @@ function	fsource (type, t0, omega, t1, dt)
           fsource= uu
 	endif
 
-! TYPE=3        Source = fichier  axi.sou
-!               sismogramme dans l unite choisie dans le fichier
-        if (type.eq.3) then
-          read(16) uur,uui
-          fsource=cmplx(uur,uui)
-        endif
- 
 ! TYPE=4        Source = triangle en deplacement
         if (type.eq.4) then
 	  trise=t0

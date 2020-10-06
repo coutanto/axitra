@@ -30,7 +30,7 @@ module parameter
 
 ! convergence relative error
    real(kind=8) :: rerr
-   parameter(rerr=1.e-5)
+   parameter(rerr=1.e-4)
 
 ! reference frequency for attenuation
    real(kind=8) :: fref
