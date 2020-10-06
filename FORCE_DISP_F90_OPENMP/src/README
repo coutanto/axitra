@@ -1,4 +1,4 @@
-Axitra Force & Moment versions 01.12.2019
+Axitra Force & Moment versions 06.08.2020
 
 Should you encounter any problem using the program, please feel free to contact me at:
 Olivier Coutant: olivier.coutant@univ-grenoble-alpes.fr
@@ -17,29 +17,36 @@ In the Makefile
 make clean  #clean the object, modules
 make axitra #compile the greeen's function program
 make convms #compile the convolution program
+make python #compile python3.7 wrappers
 
 To run
-4) edit the "axi.data" and "axi.hist" files according to your needs
+4) edit the "<header>.data" and "<header>.hist" files according to your needs
+   <header> is either 'axi' or 'axi_suffix' where suffix is an optional parameters passed as positional argument to the two programs
 5) run the codes:
-./axitra
-./convms
+./axitra [suffix]
+./convms [suffix]
 6) the seismograms are written as sac files
+
+To run under python, see "example.py" or jupyter notebook "example.ipynb" examples under EXAMPLE directory
 
 
 NEW FEATURES
 ============
 
 This "new" version includes the following changes
-
-- porting to fortran95 allows for dynamic allocations
-
-- openMP directives for use on shared memory multicore computer
-
-- force sources and moment sources versions are now available in two separate programs (and directories)
- with almost the same functionnalities: multiple source; multiple receiver; same convolution process
+- a python interface and wrappers to the code
+- all input/output files can be given a "suffix" in order to have several configurations in the same directory
+  axitra and convms are then run with the suffix as argument
+- the namelist is reduced to a few parameters, nr,ns and nc are dynamically counted
+- The duration (tl) and periodicity (xl) can be automatically computed if needed when the values are set to (<=0)
+in the axi.data namelist
 
 and previous changes
 
+- porting to fortran95 allows for dynamic allocations
+- openMP directives for use on shared memory multicore computer
+- force sources and moment sources versions are now available in two separate programs (and directories)
+ with almost the same functionnalities: multiple source; multiple receiver; same convolution process
 - possibility to enter position in lat,lon coordinates
   when latlon variable is set to .true., the program will output coordinates
   in cartesian coordinates in .xyz files. The origin is arbibrary, these cartesian coordinates
@@ -72,11 +79,13 @@ In this last version, preprocessing has been removed. axitra now is by default
 
 axitra is then ready to run. The different data files are:
 (1) input for axitra:
-- "axi.data" +  file giving station coordinates + file giving sources 
+- "axi[.suffix].data" +  file giving station coordinates + file giving sources 
   coordinates
 (2) output from axitra:
-- axi.head (information about convergence)
-- axi.res  (binary transfert function)
+- axi[.suffix].head (information about convergence)
+- axi[.suffix].res  (binary transfert function)
+(3) input for the convolution program convms
+- axi[.suffix].hist
 
 ++++++++++++++++++         ATTENTION       +++++++++++++++++++++++++++++++++
 The sources/receivers are sorted by axitra according to increasing depth.
@@ -101,13 +110,10 @@ PARAMETERS (file "parameter.f90")
 
 The parameters defined in "axi.data" are:
 (1) in the namelist:
-- nc=number of layer
 - nfreq=number of frequency to compute
-- tl=time length of the seismogram (sec)
+- tl=time length of the seismogram (sec), if set to <=0, tl is computed by axitra to contain all arrivals
 - aw=coefficient for frequency imaginary part, omega=(2*pi*freq, aw*pi/tl)
-- nr=number of receiver
-- ns=number of sources
-- xl=medium periodicity (m or km, be consistent with the other variables)
+- xl=medium periodicity (m or km, be consistent with the other variables), if set to <=0, automatically computed
 - ikmax=max number of iteration, generate an error message if overpassed
 - latlon=distance givent in (lat,lon) coordinates (.true.) or in km (.false.)
 - freesurface= free surface is set at Z=0 (.true.) or upper space is infinite (.false.)
@@ -156,10 +162,8 @@ AXIS CONVENTION
 ===============
 The convention for the axis is:
 x=north, y=east, z=upward.
-This convention is different in the computation where the vertical axis is 
+!!!!!!!! Warling !!!!!!! This convention is different in the computation where the vertical axis is 
 positive downward. 
-For the seismograms, depending on the option you choose, x is north 
-(resp. radial), y is east (resp. tang) z is positive upward.
 
 When given in geographical coordinates, axitra read x=latitude then y=longitude
 
