@@ -55,6 +55,8 @@ convms :	parameter.o fsource.o convm.o fft2cd.o writesac.o  dll2km.o
 ######################################
 #                       PYTHON
 ######################################
-python: parameter.o fft2cd.o fsource.o dll2km.o
+python: parameter.o fft2cd.o fsource.o dll2km.o axitra2py
 	f2py -c -m convfPy  -DF2PY_REPORT_ON_ARRAY_COPY=1 $(F2PY) convfPy.f90 fft2cd.o fsource.o dll2km.o
+axitra2py: dimension1.o dimension2.o parameter.o allocateArray.o initdata.o dll2km.o axitra2py.o
 
+	$(FC) $(FFLAGS) -o $@ axitra2py.o dimension1.o dimension2.o allocateArray.o initdata.o dll2km.o parameter.o
