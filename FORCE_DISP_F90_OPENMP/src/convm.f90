@@ -25,7 +25,7 @@ program convm
 
    integer ntp, nrtp, icc, ics, ic, base, narg
 
-   character header*10, sourcefile*20, statfile*20, chan(3)*2
+   character header*10, sourcefile*20, statfile*20, chan(3)*2, arg*10
 
    integer         ::  jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, index, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref,  &
@@ -49,8 +49,8 @@ program convm
 ! header if any
    narg=iargc()
    if (narg>0) then
-     call getarg(1,header)
-     write(header,"('axi_',A)") trim(header)
+     call getarg(1,arg)
+     write(header,"('axi_',A)") trim(arg)
    else
      header='axi'
    endif
