@@ -239,19 +239,16 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
                arg = -ai*cgam(ic)*zc
                if (dreal(arg) .lt. explim)  then
                    uflow=.true.
-                   egam=0.d0
-               else
-                   egam = exp(arg)
+                   arg=cmplx(explim,dimag(arg)) 
                endif
+               egam = exp(arg)
                egaminv = 1./egam
                arg = -ai*cnu(ic)*zc
                if (dreal(arg) .lt. explim)  then
                    uflow=.true.
-                   arg = cmplx(0.d0, dimag(arg))
-                   egam=0.d0
-               else
-                   enu=exp(arg)
+                   arg=cmplx(explim,dimag(arg)) 
                endif
+               enu=exp(arg)
                enuinv = 1./enu
 
 !                termes sources
@@ -417,90 +414,90 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
                cdu11 = cdu(ir, is, 11)
 
                r1 = dble(u(ir, is, 1))
-               i1 = imag(u(ir, is, 1))
+               i1 = dimag(u(ir, is, 1))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu1)
-               i2 = imag(cdu1)
+               i2 = dimag(cdu1)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 2))
-               i1 = imag(u(ir, is, 2))
+               i1 = dimag(u(ir, is, 2))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu2)
-               i2 = imag(cdu2)
+               i2 = dimag(cdu2)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 3))
-               i1 = imag(u(ir, is, 3))
+               i1 = dimag(u(ir, is, 3))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu3)
-               i2 = imag(cdu3)
+               i2 = dimag(cdu3)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 4))
-               i1 = imag(u(ir, is, 4))
+               i1 = dimag(u(ir, is, 4))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu4)
-               i2 = imag(cdu4)
+               i2 = dimag(cdu4)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 5))
-               i1 = imag(u(ir, is, 5))
+               i1 = dimag(u(ir, is, 5))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu5)
-               i2 = imag(cdu5)
+               i2 = dimag(cdu5)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 6))
-               i1 = imag(u(ir, is, 6))
+               i1 = dimag(u(ir, is, 6))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu6)
-               i2 = imag(cdu6)
+               i2 = dimag(cdu6)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 7))
-               i1 = imag(u(ir, is, 7))
+               i1 = dimag(u(ir, is, 7))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu7)
-               i2 = imag(cdu7)
+               i2 = dimag(cdu7)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 8))
-               i1 = imag(u(ir, is, 8))
+               i1 = dimag(u(ir, is, 8))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu8)
-               i2 = imag(cdu8)
+               i2 = dimag(cdu8)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 9))
-               i1 = imag(u(ir, is, 9))
+               i1 = dimag(u(ir, is, 9))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu9)
-               i2 = imag(cdu9)
+               i2 = dimag(cdu9)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 10))
-               i1 = imag(u(ir, is, 10))
+               i1 = dimag(u(ir, is, 10))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu10)
-               i2 = imag(cdu10)
+               i2 = dimag(cdu10)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 
                r1 = dble(u(ir, is, 11))
-               i1 = imag(u(ir, is, 11))
+               i1 = dimag(u(ir, is, 11))
                r1 = (r1*r1 + i1*i1)*uconv
                r2 = dble(cdu11)
-               i2 = imag(cdu11)
+               i2 = dimag(cdu11)
                r2 = (r2*r2 + i2*i2)
                tconv(ir, is) = ((r2 .le. r1) .and. tconv(ir, is))
 

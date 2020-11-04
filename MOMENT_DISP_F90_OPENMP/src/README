@@ -71,9 +71,9 @@ The reflectivity code consist of 2 executables:
 by the appropriate source time function's, and for the chosen mechanism. The 
 output are the seismograms in the time domain in sac format.
 
-In this last version, preprocessing has been removed. axitra now is by default
+In this last version, preprocessing has been removed. axitra now by default
 - run in double precision
-- uses XYZ axes (lo radial, tranverse,...)
+- uses geographical XYZ axes (No radial, tranverse,...)
 - uses harwell routine to compute bessel functions
 
 
@@ -139,7 +139,7 @@ receiver_index,lat,lon,z
 II) For the sources:
 source_index, x, y, z
  or
-source_index, lat, lon, z (!!! z expected in meter, not in km)
+source_index, lat, lon, z 
 
 III) For the file AXI.HIST
 

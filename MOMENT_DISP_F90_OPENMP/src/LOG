@@ -25,3 +25,6 @@ Version 20200806.1
 - nr,ns,nc number of sources, receivers and layers are determined from input file and removed from namelist
 - xl and tl can be computed automatically by axitra if set to <=0
 - correct bug on dirac and ricker source time function that were not normalized
+
+Version 20201104.1
+- correct bug introduced in previous version taht affect convergence in some cases
