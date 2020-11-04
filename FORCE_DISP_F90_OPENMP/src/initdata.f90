@@ -40,7 +40,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
    integer      :: ir, ir1, ir2, ic, jr, jrr, js, jss, is, is1, is2, i, nr, ns, nc
    integer      :: rindex(nr), index(ns), ncs, ncr, nrs
    logical      :: tc
-   real(kind=8) :: hh, tmp, r(nr, ns), rmax
+   real(kind=8) :: hh, tmp, r(nr, ns), rmax,zs2(ns)
 
 !++++++++++++
 !        Lecture coordonnees stations et recepteurs
@@ -89,6 +89,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
       write (in2,"(I10,3F15.3)") index(is), xs(is), ys(is), zs(is)
    enddo
    close (in2)
+   zs2=zs
 
 !++++++++++++
 !       on calcule :
@@ -193,7 +194,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
       call ll2km(xr, yr, nr, xs, ys, ns)
       open (20, file='source.xyz', form='formatted')
       do i = 1, ns
-         write (20,"(I10,3F15.3)") index(i), xs(i), ys(i), zs(i)
+         write (20,"(I10,3F15.3)") index(i), xs(i), ys(i), zs2(i)
       enddo
       close (20)
       open (20, file='station.xyz', form='formatted')
