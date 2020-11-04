@@ -41,6 +41,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
    integer      :: rindex(nr), index(ns), ncs, ncr, nrs
    logical      :: tc
    real(kind=8) :: hh, tmp, r(nr, ns), rmax
+   real(kind=8) :: zs2(ns)
 
 !++++++++++++
 !        read stations and source coordinates
@@ -51,7 +52,6 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
    do ir = 1, nr
       read (in3, *) rindex(ir), xr(ir), yr(ir), zr(ir)
    enddo
-
 
 
 !++++++++++++
@@ -69,6 +69,7 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
 !++++++++++++
 !        on reordonne les sources par profondeur croissante
 !++++++++++++
+
    do is1 = 1, ns - 1
       do is2 = is1, ns
          if (zs(is1) .gt. zs(is2)) then
@@ -88,10 +89,13 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
       enddo
    enddo
    rewind (in2)
+
    do is = 1, ns
          write (in2,"(I10,3F15.3)") index(is), xs(is), ys(is), zs(is)
    enddo
    close (in2)
+   zs2=zs
+
 
 !++++++++++++
 !       on calcule :
@@ -189,23 +193,6 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
    enddo
    close (in3)
 
-!++++++++++
-! convert from lat-lon to METER
-!++++++++++
-   if (latlon) then
-      call ll2km(xr, yr, nr, xs, ys, ns)
-      open (20, file='source.xyz', form='formatted')
-      do i = 1, ns
-         write (20,"(I10,3F15.3)") index(i), xs(i), ys(i), zs(i)
-      enddo
-      close (20)
-      open (20, file='station.xyz', form='formatted')
-      do i = 1, nr
-         write (20,"(I10,3F15.3)") rindex(i), xr(i), yr(i), zr(i)
-      enddo
-      close (20)
-   endif
-
 !++++++++++++
 !        on calcule :
 !        ncr: nombre de couches contenant un recepteur
@@ -272,6 +259,23 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
       nzrr(jrr, jr) = nzrr(jrr, jr) + 1
       izrr(nzrr(jrr, jr), jrr, jr) = ir
    enddo
+
+!++++++++++
+! convert from lat-lon to METER
+!++++++++++
+   if (latlon) then
+      call ll2km(xr, yr, nr, xs, ys, ns)
+      open (20, file='source.xyz', form='formatted')
+      do i = 1, ns
+         write (20,"(I10,3F15.3)") index(i), xs(i), ys(i), zs2(i)
+      enddo
+      close (20)
+      open (20, file='station.xyz', form='formatted')
+      do i = 1, nr
+         write (20,"(I10,3F15.3)") rindex(i), xr(i), yr(i), zr(i)
+      enddo
+      close (20)
+   endif
 
 !++++++++++++
 !         distances radiales / source
