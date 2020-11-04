@@ -133,19 +133,17 @@ subroutine reflect3(ncs, uflow)
          zsc = zs(izss(1, is2, is1))
          is0 = izss(1, is2, is1)
          arg = -ai*cgam(ic)*zsc
-         if (real(arg) .lt. explim) then
-             egam = 0.d0
+         if (dreal(arg) .lt. explim) then
+             arg=cmplx(explim,dimag(arg))
              uflow = .true. 
-         else
-             egam = exp(arg)
          endif
+         egam = exp(arg)
          arg = -ai*cnu(ic)*zsc
-         if (real(arg) .lt. explim) then
+         if (dreal(arg) .lt. explim) then
+             arg=cmplx(explim,dimag(arg))
             uflow=.true.
-            enu=0.d0
-         else
-            enu = exp(arg)
          endif
+         enu = exp(arg)
 
 !                        Source PHI
          cu1(1) = enu + rup(1, 1)/enu

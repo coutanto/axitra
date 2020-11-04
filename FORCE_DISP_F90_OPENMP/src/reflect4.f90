@@ -251,19 +251,16 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
                arg = -ai*cgam(ic)*zc
                if (dreal(arg) .lt. explim)  then
                    uflow=.true.
-                   egam=0.d0
-               else
-                   egam = exp(arg)
+                   arg=cmplx(explim,dimag(arg))
                endif
+               egam = exp(arg)
                egaminv = 1./egam
                arg = -ai*cnu(ic)*zc
                if (dreal(arg) .lt. explim)  then
                    uflow=.true.
-                   arg = cmplx(0.d0, dimag(arg))
-                   egam=0.d0
-               else
-                   enu=exp(arg)
+                   arg=cmplx(explim,dimag(arg))
                endif
+               enu=exp(arg)
                enuinv = 1./enu
 
 !                termes sources

@@ -120,19 +120,18 @@ subroutine reflect1(freesurface, nc, uflow)
 
 !   Modification pour calculateur a faible dynamique [1.e-300; 1.e+300]
       arg = -ai*cnu(ic1)*hc(ic1)
-      if (dreal(arg) .lt. explim) then !exp(-inf)*exp(i*theta)=0.
+      if (dreal(arg) .lt. explim) then 
          uflow=.true.
-         me1(ic1)=0.d0
-      else
-         me1(ic1) = exp(arg)
+         arg=cmplx(explim,dimag(arg))
       endif
+      me1(ic1) = exp(arg)
+
       arg   = -ai*cgam(ic1)*hc(ic1)
       if (dreal(arg) .lt. explim) then
         uflow=.true.
-        me2(ic1) = 0.d0
-      else
-        me2(ic1) = exp(arg)
+        arg=cmplx(explim,dimag(arg))
       endif
+      me2(ic1) = exp(arg)
 
       cs1 = rho(ic1)/ckb2(ic1)*cgam(ic1)
       cs2 = rho(ic)/ckb2(ic)*cgam(ic)
