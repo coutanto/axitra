@@ -26,7 +26,7 @@ subroutine reflect5(jf,nr,ns)
    complex(kind=8) :: ux(6), uy(6), uz(6)
    complex(kind=8),allocatable :: buffer(:,:,:)
 
-   allocate(buffer(18,nr,ns))
+   allocate(buffer(3*6*sizeof(ux),nr,ns))
 
    do is = 1, ns
    do ir = 1, nr
