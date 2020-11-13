@@ -8,22 +8,22 @@
 !*****************************************************************************
 
 module dimension1
-
+   use parameter
    implicit none
 
-   complex(kind=8)  ::  omega, omega2, a1, xlnf
-   real(kind=8)      ::  kr, kr2, uconv
+   complex(kind=fd)  ::  omega, omega2, a1, xlnf
+   real(kind=fd)      ::  kr, kr2, uconv
    logical           ::  ttconv
 
    integer, allocatable      :: irs(:, :)
    integer, allocatable      :: irc(:), nzr(:), nzrr(:, :), izrr(:, :, :)
    integer, allocatable      :: isc(:), nzs(:), nzss(:, :), izss(:, :, :)
-   real(kind=8), allocatable :: rr(:), hc(:)
-   real(kind=8), allocatable :: cosr(:, :), sinr(:, :)
-   real(kind=8), allocatable :: xs(:), ys(:), zs(:)
-   real(kind=8), allocatable :: xr(:), yr(:), zr(:)
-   real(kind=8), allocatable :: vp(:), vs(:), vp2(:), vs2(:)
-   real(kind=8), allocatable :: rho(:), qp(:), qs(:)
+   real(kind=fd), allocatable :: rr(:), hc(:)
+   real(kind=fd), allocatable :: cosr(:, :), sinr(:, :)
+   real(kind=fd), allocatable :: xs(:), ys(:), zs(:)
+   real(kind=fd), allocatable :: xr(:), yr(:), zr(:)
+   real(kind=fd), allocatable :: vp(:), vs(:), vp2(:), vs2(:)
+   real(kind=fd), allocatable :: rho(:), qp(:), qs(:)
 
 !$OMP THREADPRIVATE(xlnf,omega,omega2,a1,kr,kr2,ttconv)
 

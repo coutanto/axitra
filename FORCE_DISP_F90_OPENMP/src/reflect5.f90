@@ -20,9 +20,9 @@ subroutine reflect5(jf,nr,ns)
    implicit none
 
    integer          :: it,jf,base,is,nr,ns,ir,i
-   real(kind=8)     :: cor, sir, cof
-   complex(kind=8) :: ur(3), ut(3), uz(3),a, ux(3),uy(3)
-   complex(kind=8),allocatable :: buffer(:,:,:)
+   real(kind=fd)     :: cor, sir, cof
+   complex(kind=fd) :: ur(3), ut(3), uz(3),a, ux(3),uy(3)
+   complex(kind=fd),allocatable :: buffer(:,:,:)
 
    allocate(buffer(9,nr,ns))
 

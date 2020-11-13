@@ -38,15 +38,15 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
 
    logical :: tmin, tconv(nr, ns)
    integer :: is1, ic, is2, is3, ics, is, ir, jrs, ir3,ir0,idel,is0,ir1,ir2
-   real(kind=8) :: r1,r2,i1,i2,zc,dz,zsc
-   complex(kind=8) :: egam, enu, s1phiu, s1phid, egaminv, enuinv,arg
-   complex(kind=8) :: pu(2, 4), pd(2, 4), push(2), pdsh(2)
-   complex(kind=8) :: ftdosh(nc), ftup(nc, 2, 2), ftdo(nc, 2, 2), ftupsh(nc)
-   complex(kind=8) :: s1psiu, s1psid, s2phiu, s2phid, s2psiu, s2psid, s3phiu
-   complex(kind=8) :: s3phid, s3psiu, s3psid, s4phid, s4phiu, s4psid, s4psiu
-   complex(kind=8) :: s5, s6, cs2, cs3, cs4, cs5, cs6, cs7, cs8, cs9, cz1, &
+   real(kind=fd) :: r1,r2,i1,i2,zc,dz,zsc
+   complex(kind=fd) :: egam, enu, s1phiu, s1phid, egaminv, enuinv,arg
+   complex(kind=fd) :: pu(2, 4), pd(2, 4), push(2), pdsh(2)
+   complex(kind=fd) :: ftdosh(nc), ftup(nc, 2, 2), ftdo(nc, 2, 2), ftupsh(nc)
+   complex(kind=fd) :: s1psiu, s1psid, s2phiu, s2phid, s2psiu, s2psid, s3phiu
+   complex(kind=fd) :: s3phid, s3psiu, s3psid, s4phid, s4phiu, s4psid, s4psiu
+   complex(kind=fd) :: s5, s6, cs2, cs3, cs4, cs5, cs6, cs7, cs8, cs9, cz1, &
                        cz1b, cz2, cz2b, cz3, cz4, cz4b, cz3b
-   complex(kind=8) :: cu, cu2, cdu1, cdu2, cdu3, cdu4, cdu5,cdu(nr, ns, 5),cr3,cr1,cr2
+   complex(kind=fd) :: cu, cu2, cdu1, cdu2, cdu3, cdu4, cdu5,cdu(nr, ns, 5),cr3,cr1,cr2
 
 
 !

@@ -8,10 +8,11 @@
 !******************************************************************************
 
 module reflect0m
+use parameter
 contains
 subroutine initc(c, n)
    implicit none
-   complex(kind=8) c(*)
+   complex(kind=fd) c(*)
    integer n, i
    do i = 1, n
       c(i) = (0.d0, 0.d0)
@@ -28,8 +29,8 @@ subroutine reflect0(ik, nc, nr,ns,nrs)
    implicit none
 
    integer :: ir,ik,nc,nrs,nr,ns,ic
-   real(kind=8) :: arg,gs,gp,vy
-   complex(kind=8) :: cc,cvp,ccv,cvs
+   real(kind=fd) :: arg,gs,gp,vy
+   complex(kind=fd) :: cc,cvp,ccv,cvs
 
 !     initialisations pour kr=0.
 

@@ -42,17 +42,16 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    integer ntp, nrtp, icc, ics, ic, base
 
-   character header*50, sourcefile*20, statfile*20, chan(3)*2
+   character header*50, sourcefile*20, statfile*20, chan(3)*2,arg*50
    integer :: id
    integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, index, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou
-   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, fs
+                       lat, long, t0, t1, pas, xphi, dt0, rfsou
+   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 disp(:), xs(:), ys(:), zs(:), amp(:)
-   real(kind=4)              :: spas
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
 
    namelist/input/nc, nfreq, tl, aw, nr, ns, xl, ikmax, latlon, freesurface, sourcefile, statfile
@@ -84,7 +83,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
-   read (10, input)
+   read (10, input,end=101)
 ! count number of layer
    nc=0
    do while(.true.)
@@ -129,22 +128,22 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !                 medium, source and station
 !++++++++++++
    do ic = 1, nc
-      read (10, *) hc(ic), vp(ic), vs(ic), rho(ic), qp(ic), qs(ic)
+      read (10, *,end=101) hc(ic), vp(ic), vs(ic), rho(ic), qp(ic), qs(ic)
    enddo
    close (10)
 
    do is = 1, ns
-      read (13, *) index, xs(is), ys(is), zs(is)
+      read (13, *,end=101) index, xs(is), ys(is), zs(is)
       indexin = -1
       rewind (15)
       do while (indexin .ne. index)
-         read (15, *) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
+         read (15, *,end=101) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
       enddo
       delay(is) = delay(is) + dt0
    enddo
 
    do ir = 1, nr
-      read (14, *) rindex(ir), xr(ir), yr(ir), zr(ir)
+      read (14, *,end=101) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
 !
@@ -213,7 +212,6 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    dfreq = 1./tl
    pas = tl/nt
-   spas=sngl(pas)
    aw = -pi*aw/tl
 
 ! loop over frequencies
@@ -225,9 +223,9 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
       read (10, *, end=2000)
       if (ics == 3) then
-        fs=fsou(jf)
+        freqs=fsou(jf)
       else
-        fs=fsource(ics, t0, omega, t1, pas)
+        freqs=fsource(ics, t0, omega, t1, pas)
       endif
 
       do is = 1, ns ! loop over source
@@ -236,7 +234,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !         if (ics .ne. 8) then
 !            t1 = length(is)/rvel(is)
 !         endif
-         us = fs*deriv*exp(-ai*omega*delay(is))
+         us = freqs*deriv*exp(-ai*omega*delay(is))
 
          do ir = 1, nr ! loop over receiver
             base = (ir - 1)*3 + (is - 1)*3*nr + (jf - 1)*3*nr*ns
@@ -286,9 +284,9 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/tl
-         sx(it,ir) = (ux(it, ir)*cc)
-         sy(it,ir) = (uy(it, ir)*cc)
-         sz(it,ir) = (uz(it, ir)*cc)
+         sx(it,rindex(ir)) = (ux(it, ir)*cc)
+         sy(it,rindex(ir)) = (uy(it, ir)*cc)
+         sz(it,rindex(ir)) = (uz(it, ir)*cc)
       enddo
 
    enddo
@@ -299,25 +297,6 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    close(15)
    close(16)
 
+101 continue
    
-end
-
-
-real function hanning(i, max, perc)
-   use parameter
-   implicit none
-
-   integer i, max
-   real(kind=8) xi, xm, perc
-   xi = i
-   xm = max
-   if ((xm - xi)/xm .le. perc) then
-      hanning = (cos((1 - (xm - xi)/xm/perc)*pi) + 1)/2.
-!        else if (xi/xm.le.perc) then
-!                hanning=(cos((1-(xi)/xm/perc)*pi)+1)/2.
-!        else if (xi.le.10) then
-!                hanning=0.
-   else
-      hanning = 1.
-   endif
 end

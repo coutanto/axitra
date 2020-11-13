@@ -46,10 +46,10 @@ program axitra
    integer              :: ncs ! number of layer containing a source
 
    integer              :: nr, ns, nc, narg
-   real(kind=8)         :: dfreq, freq, pil
+   real(kind=fd)         :: dfreq, freq, pil
    logical              :: latlon, freesurface, uflow1, uflow3, uflow4
    logical, allocatable :: tconv(:, :)
-   real(kind=8)         :: rw, aw, phi, zom, tl, xl, rmax, vmean
+   real(kind=fd)         :: rw, aw, phi, zom, tl, xl, rmax, vmean
    namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
    uflow1=.false.
@@ -301,12 +301,13 @@ end
 !
 
 subroutine estimateParameter(xl,tl,rmax,vp,vs,nc)
+use parameter
 implicit none
-real(kind=8) :: xl,tl,rmax,vp(nc),vs(nc)
+real(kind=fd) :: xl,tl,rmax,vp(nc),vs(nc)
 integer      :: nc
 
 integer      :: i
-real(kind=8) :: vmax,vmin
+real(kind=fd) :: vmax,vmin
 
 vmax=vp(1)
 vmin=vs(1)

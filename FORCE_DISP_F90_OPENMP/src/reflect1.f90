@@ -36,9 +36,9 @@ subroutine reflect1(freesurface, nc, uflow)
    integer :: nc
 
    integer :: ic,ic1
-   complex(kind=8) :: coef, cf1, cf2, cf3, cdd, ca, cb, cb1, cb2, ca1d, arg
-   complex(kind=8) :: ca2d, cc, cd, ce, cf, cg, ch, cdeph, cs1, cs2, cdelt
-   real(kind=8) :: aki
+   complex(kind=fd) :: coef, cf1, cf2, cf3, cdd, ca, cb, cb1, cb2, ca1d, arg
+   complex(kind=fd) :: ca2d, cc, cd, ce, cf, cg, ch, cdeph, cs1, cs2, cdelt
+   real(kind=fd) :: aki
 ! Coefficient pour la convention sur PSI (coef) et sur la TF (aki=-1.)
    coef = 1./ai
    aki = -1.

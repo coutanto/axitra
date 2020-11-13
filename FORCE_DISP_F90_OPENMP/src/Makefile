@@ -46,7 +46,7 @@ veryclean:
 
 all: axitra convms
 
-axitra :	dimension1.o dimension2.o parameter.o allocateArray.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o reflect4.o reflect5.o ff0ad.o axitra.o dll2km.o
+axitra :	parameter.o dimension1.o dimension2.o allocateArray.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o reflect4.o reflect5.o ff0ad.o axitra.o dll2km.o
 	$(FC) $(FFLAGS) -o axitra axitra.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o reflect4.o reflect5.o ff0ad.o dimension1.o dimension2.o parameter.o allocateArray.o dll2km.o
 
 convms :	parameter.o fsource.o convm.o fft2cd.o writesac.o  dll2km.o
