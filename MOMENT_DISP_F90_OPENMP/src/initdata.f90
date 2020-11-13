@@ -14,11 +14,12 @@
 !*           hc
 !******************************************************************************
 module initdatam
+use parameter 
 contains
 
 function mean(tab)
 implicit none
-real(kind=8) :: mean,tab(:)
+real(kind=fd) :: mean,tab(:)
 
 integer ::i
   mean=0.d0
@@ -40,8 +41,8 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
    integer      :: ir, ir1, ir2, ic, jr, jrr, js, jss, is, is1, is2, i, nr, ns, nc
    integer      :: rindex(nr), index(ns), ncs, ncr, nrs
    logical      :: tc
-   real(kind=8) :: hh, tmp, r(nr, ns), rmax
-   real(kind=8) :: zs2(ns)
+   real(kind=fd) :: hh, tmp, r(nr, ns), rmax
+   real(kind=fd) :: zs2(ns)
 
 !++++++++++++
 !        read stations and source coordinates

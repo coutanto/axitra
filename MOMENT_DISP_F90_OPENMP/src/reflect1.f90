@@ -34,10 +34,10 @@ subroutine reflect1(freeSurface,nc,uflow)
    logical :: freeSurface
 
    integer         :: ic, ic1,nc
-   real(kind=8)    :: aki
-   complex(kind=8) :: coef, cf1, cf2, cf3, cdd, cnurho, cgarho, cnugam, cb1, cb2, ckb2i1, ckb2i2
-   complex(kind=8) :: ca1d, ca2d, ca, cb, cc, cd, ce, cf, cg, ch, cgkr2, chkr2, cdd2, cs1, cs2, cdelt
-   complex(kind=8) :: ctmp1, ctmp2, ctmp3, ctmp4, ctmp5, ctmp6, ctmp7, ctmp8, ctmp9, ctmp10, arg
+   real(kind=fd)    :: aki
+   complex(kind=fd) :: coef, cf1, cf2, cf3, cdd, cnurho, cgarho, cnugam, cb1, cb2, ckb2i1, ckb2i2
+   complex(kind=fd) :: ca1d, ca2d, ca, cb, cc, cd, ce, cf, cg, ch, cgkr2, chkr2, cdd2, cs1, cs2, cdelt
+   complex(kind=fd) :: ctmp1, ctmp2, ctmp3, ctmp4, ctmp5, ctmp6, ctmp7, ctmp8, ctmp9, ctmp10, arg
    logical         :: uflow
 
 ! Coefficient pour la convention sur PSI (coef) et sur la TF (aki=-1.)

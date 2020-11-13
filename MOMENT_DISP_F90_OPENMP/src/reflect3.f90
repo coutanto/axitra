@@ -19,13 +19,13 @@ subroutine reflect3(ncs, uflow)
    implicit none
 
    integer is0, is1, ic, is2,ncs
-   real(kind=8)     :: zsc
-   complex(kind=8) :: rud1, rud2, rud3, rud4, rdu1, rdu2, rdu3, rdu4, tud1
-   complex(kind=8) :: tud2, tud3, tud4, tdu1, tdu2, tdu3, tdu4, tsh, egam
-   complex(kind=8) :: enu, rupsh, rdosh, arg, cdet, cu1sh, cd1sh, cu2sh, cd2sh
+   real(kind=fd)     :: zsc
+   complex(kind=fd) :: rud1, rud2, rud3, rud4, rdu1, rdu2, rdu3, rdu4, tud1
+   complex(kind=fd) :: tud2, tud3, tud4, tdu1, tdu2, tdu3, tdu4, tsh, egam
+   complex(kind=fd) :: enu, rupsh, rdosh, arg, cdet, cu1sh, cd1sh, cu2sh, cd2sh
 
-   complex(kind=8) :: cu1(2), cd1(2), cu2(2), cd2(2), cu3(2), cd3(2)
-   complex(kind=8) :: cu4(2), cd4(2), rup(2, 2), rdo(2, 2)
+   complex(kind=fd) :: cu1(2), cd1(2), cu2(2), cd2(2), cu3(2), cd3(2)
+   complex(kind=fd) :: cu4(2), cd4(2), rup(2, 2), rdo(2, 2)
 
    logical         :: uflow
 

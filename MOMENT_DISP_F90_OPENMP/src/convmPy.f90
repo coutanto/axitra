@@ -6,12 +6,14 @@
 !
 ! Convolution and output using output() routine
 ! All computations done in double float format(64bits)
+! 
+!  !!!! WARNING WARNING AS of today, f2py do not accept to replace a 'kind=8' declaration by a 
+! generic 'kind=fd' at least on my macos, Mojave, gfortran plateform 
 !
 !******************************************************************************
 
 ! number of elementary source, 6 for moment, 3 for forces
 #define NSTYPE 6
-
 
 ! Input
 ! id: unique id for this computation used for all input/output name files
@@ -25,8 +27,8 @@
 ! n1z, n2z: dimension for sz
 subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
-   use parameter
    use fsourcem
+   use parameter
    implicit none
 
 !f2py intent(in) ics,t0,t1,icc
@@ -38,6 +40,7 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !f2py integer intent(hide),depend(sz) :: n1z=shape(sz,0), n2z=shape(sz,1)
 
 
+
    integer :: nt,nstat,nsx,ntx,n1y,n2y,n1z,n2z
    real(kind=8) :: sx(ntx,nsx),sy(n2y,n1y),sz(n2z,n1z)
 
@@ -47,13 +50,12 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    integer :: id
    integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, index, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou
-   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, fs
+                       lat, long, t0, t1, pas, xphi, dt0, rfsou
+   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
-   real(kind=4)              :: spas
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
 
    namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
@@ -215,7 +217,6 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    dfreq = 1./tl
    pas = tl/nt
-   spas=sngl(pas)
    aw = -pi*aw/tl
 
 ! loop over frequencies
@@ -227,9 +228,9 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
       read (10, *, end=2000)
       if (ics == 3) then
-        fs=fsou(jf)
+        freqs=fsou(jf)
       else
-        fs=fsource(ics, t0, omega, t1, pas)
+        freqs=fsource(ics, t0, omega, t1, pas)
       endif
 
       do is = 1, ns ! loop over source
@@ -238,7 +239,7 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !         if (ics .ne. 8) then
 !            t1 = length(is)/rvel(is)
 !         endif
-         us = fs*deriv*exp(-ai*omega*delay(is))
+         us = freqs*deriv*exp(-ai*omega*delay(is))
 
          do ir = 1, nr ! loop over receiver
             base = (ir - 1)*3 + (is - 1)*3*nr + (jf - 1)*3*nr*ns
@@ -288,9 +289,9 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/tl
-         sx(it,ir) = (ux(it, ir)*cc)
-         sy(it,ir) = (uy(it, ir)*cc)
-         sz(it,ir) = (uz(it, ir)*cc)
+         sx(it,rindex(ir)) = (ux(it, ir)*cc)
+         sy(it,rindex(ir)) = (uy(it, ir)*cc)
+         sz(it,rindex(ir)) = (uz(it, ir)*cc)
       enddo
 
    enddo
@@ -317,8 +318,8 @@ subroutine cmoment(mu, strike, dip, rake, disp, surf, a)
       xmoment = mu*disp*surf
    endif
 !        xmoment=1.e30
-   write (6, *) "moment (Nm):", xmoment
-   write (6, *) "moment (Dyne.cm):", xmoment*1.e7
+   write (6, *) "Moment (Nm):", xmoment
+   write (6, *) "Moment (Dyne.cm):", xmoment*1.e7
    strike = strike*pi/180.
    dip = dip*pi/180.
    rake = rake*pi/180.
@@ -367,21 +368,3 @@ subroutine cmoment(mu, strike, dip, rake, disp, surf, a)
    return
 end
 
-real function hanning(i, max, perc)
-   use parameter
-   implicit none
-
-   integer i, max
-   real(kind=8) xi, xm, perc
-   xi = i
-   xm = max
-   if ((xm - xi)/xm .le. perc) then
-      hanning = (cos((1 - (xm - xi)/xm/perc)*pi) + 1)/2.
-!        else if (xi/xm.le.perc) then
-!                hanning=(cos((1-(xi)/xm/perc)*pi)+1)/2.
-!        else if (xi.le.10) then
-!                hanning=0.
-   else
-      hanning = 1.
-   endif
-end

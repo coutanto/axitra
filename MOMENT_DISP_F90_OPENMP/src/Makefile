@@ -38,7 +38,7 @@ CFLAGS=-O3 	# 	and its options
 
 all:	axitra convms
 
-OBJ1=dimension1.o dimension2.o parameter.o allocateArray.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o \
+OBJ1=parameter.o dimension1.o dimension2.o allocateArray.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o \
 reflect4.o reflect5.o ff0ad.o dll2km.o axitra.o
 OBJ2=dll2km.o dimension1.o dimension2.o parameter.o fft2cd.o fsource.o convm.o
 #######################################
@@ -69,5 +69,8 @@ tar:
 ######################################
 #			PYTHON
 ######################################
-python: parameter.o fft2cd.o fsource.o dll2km.o 
+python: parameter.o dimension1.o fft2cd.o fsource.o dll2km.o axitra2py
 	f2py -c -m convmPy  -DF2PY_REPORT_ON_ARRAY_COPY=1 $(F2PY) convmPy.f90 fft2cd.o fsource.o dll2km.o
+
+axitra2py: dimension1.o dimension2.o parameter.o allocateArray.o initdata.o dll2km.o axitra2py.o 
+	$(FC) $(FFLAGS) -o $@ axitra2py.o dimension1.o dimension2.o allocateArray.o initdata.o dll2km.o parameter.o

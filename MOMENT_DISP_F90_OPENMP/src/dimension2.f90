@@ -9,18 +9,18 @@
 !*****************************************************************************
 
 module dimension2
-
+  use parameter
   implicit none
 
-  complex(kind=8), allocatable :: cka(:),ckb(:),cka2(:),ckb2(:),cnu(:),cgam(:),c2(:),cff(:)
-  complex(kind=8), allocatable :: tdsh(:),tush(:),me1(:),me2(:),rdsh(:),rush(:)
-  real(kind=8),    allocatable :: fj1(:),k0(:),k1(:),k2(:),k3(:),k4(:),k5(:)
-  complex(kind=8), allocatable :: rd(:,:,:),ru(:,:,:),td(:,:,:),tu(:,:,:)
-  complex(kind=8), allocatable :: nt(:,:,:),mt(:,:,:),ntsh(:),mtsh(:)
-  complex(kind=8), allocatable :: fdo(:,:,:),fup(:,:,:),fupsh(:),fdosh(:)
-  complex(kind=8), allocatable :: su1(:,:),sd1(:,:),su2(:,:),sd2(:,:),su3(:,:),sd3(:,:),su4(:,:),sd4(:,:)
-  complex(kind=8), allocatable :: su1sh(:),sd1sh(:),su2sh(:),sd2sh(:)
-  complex(kind=8), allocatable :: u(:,:,:)
+  complex(kind=fd), allocatable :: cka(:),ckb(:),cka2(:),ckb2(:),cnu(:),cgam(:),c2(:),cff(:)
+  complex(kind=fd), allocatable :: tdsh(:),tush(:),me1(:),me2(:),rdsh(:),rush(:)
+  real(kind=fd),    allocatable :: fj1(:),k0(:),k1(:),k2(:),k3(:),k4(:),k5(:)
+  complex(kind=fd), allocatable :: rd(:,:,:),ru(:,:,:),td(:,:,:),tu(:,:,:)
+  complex(kind=fd), allocatable :: nt(:,:,:),mt(:,:,:),ntsh(:),mtsh(:)
+  complex(kind=fd), allocatable :: fdo(:,:,:),fup(:,:,:),fupsh(:),fdosh(:)
+  complex(kind=fd), allocatable :: su1(:,:),sd1(:,:),su2(:,:),sd2(:,:),su3(:,:),sd3(:,:),su4(:,:),sd4(:,:)
+  complex(kind=fd), allocatable :: su1sh(:),sd1sh(:),su2sh(:),sd2sh(:)
+  complex(kind=fd), allocatable :: u(:,:,:)
 
 
 !$OMP THREADPRIVATE(cka,ckb,cka2,ckb2,cnu,cgam,c2)

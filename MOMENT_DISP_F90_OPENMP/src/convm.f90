@@ -29,16 +29,16 @@ program convm
    character header*10, sourcefile*20, statfile*20, chan(3)*2,arg*10
 
    integer:: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, index, indexin
-   real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
+   real(kind=fd)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
                        lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou,mt
-   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, fs
+   complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:)
-   real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
+   real(kind=fd), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
-   real(kind=4), allocatable :: sx(:), sy(:), sz(:)
-   real(kind=4)              :: spas
-   complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
+   real(kind=fs), allocatable :: sx(:), sy(:), sz(:)
+   real(kind=fs)              :: spas
+   complex(kind=fd), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
 
    namelist/input/ nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
@@ -255,9 +255,9 @@ write(0,*) '<',trim(header)//'.data','>'
 
       read (10, *, end=2000)
       if (ics.eq.3) then
-        fs=fsou(jf)
+        freqs=fsou(jf)
       else
-        fs=fsource(ics, t0, omega, t1, pas)
+        freqs=fsource(ics, t0, omega, t1, pas)
       endif
 
       do is = 1, ns ! loop over source
@@ -266,8 +266,7 @@ write(0,*) '<',trim(header)//'.data','>'
 !         if (ics .ne. 8) then
 !            t1 = length(is)/rvel(is)
 !         endif
-         us = fs*deriv*exp(-ai*omega*delay(is))
-         !us = fs !modifOC
+         us = freqs*deriv*exp(-ai*omega*delay(is))
          do ir = 1, nr ! loop over receiver
             base = (ir - 1)*3 + (is - 1)*3*nr + (jf - 1)*3*nr*ns
             read (12, rec=base + 1, err=2000) (uxf(it), it=1, NSTYPE)
@@ -336,7 +335,7 @@ subroutine cmoment(mu, strike, dip, rake, disp, surf, a)
    use parameter
    implicit none
 
-   real(kind=8) xmoment, mu, strike, dip, rake, disp, surf, a(6), sd, &
+   real(kind=fd) xmoment, mu, strike, dip, rake, disp, surf, a(6), sd, &
       cd, sp, cp, s2p, s2d, c2p, c2d, x1, x2, x3, x4, x5, x6, cl, sl
 
    if (surf .eq. 0.) then
@@ -400,7 +399,7 @@ real function hanning(i, max, perc)
    implicit none
 
    integer i, max
-   real(kind=8) xi, xm, perc
+   real(kind=fd) xi, xm, perc
    xi = i
    xm = max
    if ((xm - xi)/xm .le. perc) then

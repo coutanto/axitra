@@ -22,9 +22,9 @@ subroutine reflect2(nc)
    use parameter
    implicit none
 
-   complex(kind=8) :: nb(2, 2), mb(2, 2), nbsh, mbsh
-   complex(kind=8) :: ca1,ca2,ca3,ca4,cb1,cb2,cb3,cb4,cc1,cc2,cc3,cc4
-   complex(kind=8) :: cadet,cash,cbsh,ccsh
+   complex(kind=fd) :: nb(2, 2), mb(2, 2), nbsh, mbsh
+   complex(kind=fd) :: ca1,ca2,ca3,ca4,cb1,cb2,cb3,cb4,cc1,cc2,cc3,cc4
+   complex(kind=fd) :: cadet,cash,cbsh,ccsh
    integer          :: ic, ic1,nc
 
 !

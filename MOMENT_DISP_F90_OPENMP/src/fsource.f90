@@ -20,14 +20,14 @@ module fsourcem
 
 contains
 function	fsource (type, t0, omega, t1, dt)
-use parameter
-	implicit 	none
-	integer		type
-	real(kind=8)		dt,t0,t1
-	real rand
-	real(kind=8)    :: uur,uui,trise,trupt
-	complex(kind=8) :: fsource,uu,uex,uxx,omega,shx
-    real(kind=8),parameter    :: two=2.d0
+    use parameter
+    implicit 	none
+    integer          ::	type
+    real(kind=fd)    :: dt,t0,t1
+    real(kind=fd)    ::  rand
+    real(kind=fd)    :: uur,uui,trise,trupt
+    complex(kind=fd) :: fsource,uu,uex,uxx,omega,shx
+    real(kind=fd),parameter    :: two=2.d0
 
 !       write(0,*) type, omega, t0, t1, dt
 ! TYPE=0               Source = Dirac en deplacement

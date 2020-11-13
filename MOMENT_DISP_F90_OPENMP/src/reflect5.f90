@@ -20,11 +20,11 @@ subroutine reflect5(jf,nr,ns)
    implicit none
 
    integer base, is, ir, it, jf, nr,ns, i
-   real(kind=8)     :: cor, cor2, co2r, sir, sir2, si2r
-   complex(kind=8) :: urxx, utxx, uzxx, urxy, utxy, uzxy, urxz, utxz, uzxz
-   complex(kind=8) :: uryy, utyy, uzyy, uryz, utyz, uzyz, urzz, utzz, uzzz
-   complex(kind=8) :: ux(6), uy(6), uz(6)
-   complex(kind=8),allocatable :: buffer(:,:,:)
+   real(kind=fd)     :: cor, cor2, co2r, sir, sir2, si2r
+   complex(kind=fd) :: urxx, utxx, uzxx, urxy, utxy, uzxy, urxz, utxz, uzxz
+   complex(kind=fd) :: uryy, utyy, uzyy, uryz, utyz, uzyz, urzz, utzz, uzzz
+   complex(kind=fd) :: ux(6), uy(6), uz(6)
+   complex(kind=fd),allocatable :: buffer(:,:,:)
 
    allocate(buffer(18,nr,ns))
 

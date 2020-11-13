@@ -23,26 +23,21 @@ subroutine reflect4(jf, ik, tmin, tconv, nc, nr, ns, ncs, ncr, uflow)
    integer :: nc, nr, ns, ncs,ncr
    integer :: jf, ik
    logical :: uflow
-! Global
-!      include "parameter.inc90"
-!      include "dimension1.inc90"
-!      include "dimension2.inc90"
-
 ! Local
    integer :: ic, ir, ir1, ir2, ir3, idel, is, is1, is2, is3, jrs, ics, is0, ir0
    logical :: tmin, tconv(nr, ns)
 
-   complex(kind=8) :: egam, enu, s1phiu, s1phid
-   complex(kind=8) :: s1psiu, s1psid, s2phiu, s2phid, s2psiu, s2psid, s3phiu
-   complex(kind=8) :: s3phid, s3psiu, s3psid, s4phid, s4phiu, s4psid, s4psiu
-   complex(kind=8) :: s5, s6, arg, enuinv, egaminv, cs2, cs4, cs3, cs5, cs6, cs7, cs8, cs9
-   complex(kind=8) :: cu, cdu1, cdu2, cu2, cdu3, cdu4, cdu5, cu3, cdu6, cdu7, cdu8, cdu9, cdu10, cdu11
-   complex(kind=8) :: cdu(nr, ns, 11)
-   complex(kind=8) :: cz1, cz1b, cz2, cz2b, cz3, cz3b, cz4, cz4b, cr1, cr2, cr3
-   real(kind=8)     :: zc, dz, r1, i1, r2, i2, zsc
+   complex(kind=fd) :: egam, enu, s1phiu, s1phid
+   complex(kind=fd) :: s1psiu, s1psid, s2phiu, s2phid, s2psiu, s2psid, s3phiu
+   complex(kind=fd) :: s3phid, s3psiu, s3psid, s4phid, s4phiu, s4psid, s4psiu
+   complex(kind=fd) :: s5, s6, arg, enuinv, egaminv, cs2, cs4, cs3, cs5, cs6, cs7, cs8, cs9
+   complex(kind=fd) :: cu, cdu1, cdu2, cu2, cdu3, cdu4, cdu5, cu3, cdu6, cdu7, cdu8, cdu9, cdu10, cdu11
+   complex(kind=fd) :: cdu(nr, ns, 11)
+   complex(kind=fd) :: cz1, cz1b, cz2, cz2b, cz3, cz3b, cz4, cz4b, cr1, cr2, cr3
+   real(kind=fd)     :: zc, dz, r1, i1, r2, i2, zsc
 
-   complex(kind=8) :: pu(2, 4), pd(2, 4), push(2), pdsh(2)
-   complex(kind=8) :: ftdosh(nc), ftup(nc, 2, 2), ftdo(nc, 2, 2), ftupsh(nc)
+   complex(kind=fd) :: pu(2, 4), pd(2, 4), push(2), pdsh(2)
+   complex(kind=fd) :: ftdosh(nc), ftup(nc, 2, 2), ftdo(nc, 2, 2), ftupsh(nc)
 !
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !

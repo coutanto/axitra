@@ -1,15 +1,24 @@
 # Python wrappers to reflectivity axitra code using discrete wavenumber
 #
+#   
+#   axitra.Axitra() to create an instance of Axitra class that contains all parameters
+#   methods associated to the class:
+#
+#   Axitra.read(): fill the class from existing configuration file
+#   Axitra.print(): print some member values
+#   Axitra.clean(): clean the class and the associated files on disk
+#
 # Usefull functions are for moment tensor source:
-#   axitram.Axitra() to create an instance of Axitra class that contains all parameters
-#   axitram.moment_green() to compute Green's functions
-#   axitram.moment_conv()  to convolve Green's functions with a source time function
-#      and for unidirectionnal forces:
-#   axitraf.Axitra()
-#   axitraf.force_green()
-#   axitraf.force_conv()
+#   axitra.moment.green() to compute Green's functions
+#   axitra.moment.conv()  to convolve Green's functions with a source time function
+#
+# And for unidirectionnal forces:
+#   axitra.force.green()
+#   axitra.force.conv()
 
 import numpy as np
+
+
 
 class Axitra:
     '''
@@ -118,8 +127,16 @@ class Axitra:
             print('ERROR: could not clean axitra file on disk')
             return
 
+    def print(self):
+        '''
+        print Axitra class parameters
+        :return: None
+        '''
+        print('xl=',self.xl,' duration=',self.duration, ' nfreq=',self.nfreq,' fmax=',self.fmax,' path_to_binary=',self.axpath)
+        print('nsource=', self.nsource, ' nstat=', self.nstation)
+
     @classmethod
-    def read(self,suffix=None,path='.'):
+    def read(self, suffix=None, path='.'):
         '''
         read an existing axi_suffix.data file and the associate "source" and "station" files
         and return an Axitra class instance.
@@ -128,7 +145,7 @@ class Axitra:
         the files and serialized them into a temporary file <axi.datapy> that we read here.
         The axitra2py forytran executable must be compiled before by "make python"
 
-        :param axi_data_file:
+        :param suffix of axi_suffix.data_file, or read axi.Data if no suffix supplied
         :return: an Axitra class instance
         '''
 
@@ -199,353 +216,377 @@ class Axitra:
             print('ERROR: could not run axitra2py successfully')
             return None
 
-        ap = Axitra(model, station, source, nfreq/tl, tl, xl, latlon, freesurface, ikmax, path, id=None , aw=aw)
+        ap = Axitra(model, station, source, nfreq/tl, tl, xl, latlon, freesurface, ikmax, path, id=suffix , aw=aw)
         return ap
+# -----------------------------------------------------------------------------------------------
+#
+#                                    MOMENT CLASS
+#
+# -----------------------------------------------------------------------------------------------
+class moment:
+    @classmethod
+    def green(self, axitra_param):
+        '''
+        Compute the Green's functions for the set of parameters supplied and for moment tensor sources
+        The (6 x nfreq x nsources x nstations) Green's functions are stored in a file on disk, the next step is to
+        convolve them with the source function(s) using moment_conv() in order to obtain the
+        seismograms.
 
-def moment_green(axitra_param):
-    '''
-    Compute the Green's functions for the set of parameters supplied and for moment tensor sources
-    The (6 x nfreq x nsources x nstations) Green's functions are stored in a file on disk, the next step is to
-    convolve them with the source function(s) using moment_conv() in order to obtain the
-    seismograms.
+        This function write several input files on disk and call the fortran program "axitra" according
+        to the path 'axpath'. The input/output files are of the form "axi_???.suffix" where axi_??? can be obtain
+        from the returned Axitra class instance by class.sid
 
-    This function write several input files on disk and call the fortran program "axitra" according
-    to the path 'axpath'. The input/output files are of the form "axi_???.suffix" where axi_??? can be obtain
-    from the returned Axitra class instance by class.sid
+        Input parameters:
+        - an instance of Axitra class obtained either by class constructor or Axitra.rea()
 
-    Input parameters:
-    - an instance of Axitra class obtained either by class constructor or Axitra.rea()
+        Return:
+        - ap = the instance of Axitra class
+        '''
 
-    Return:
-    - ap = the instance of Axitra class
-    '''
+        # save parameters in standard axitra input files
+        self.save_files(axitra_param)
 
-    # save parameters in standard axitra input files
-    moment_save_files(axitra_param)
+        # call green's function computation
+        self.run_green_fortran(axitra_param)
 
-    # call green's function computation
-    __call_greenm_fort__(axitra_param)
+        return axitra_param
 
-    return axitra_param
+    @classmethod
+    def conv(self, ap, hist, source_type, t0, t1=0., unit=1, sfunc=None):
+        '''
+        Compute the convolution of Green's function obtained by a previous call to moment_green()
+        by source time functions.
 
+        Input:
+        ap = Axitra class instance from moment_green
+        hist = source history array (nsource x 6)
+               index, moment(Nm), strike, dip, rake, 0., 0., delay
+               index, slip, strike, dip, rake, width, height, delay
+        source_type =
+            0 : Dirac
+            1 : Ricker
+            2 : step
+            3 : source time function stored in file <header>.sou
+            4 : triangle
+            5 : ramp
+            6 : not used....
+            7 : True step (watch high frequencies cutoff!!)
+            8 : Trapezoid
 
-def __call_greenm_fort__(ap):
-    '''
-    Call the fortran code that compute the Green's function
-    ap: axitra class instance that contains required parameters
-    :return: ier = return code 0 if ok, >=1 if error
-    ier = 1 => executable not found
-    ier = 2 => max iteration number reached
-    ier = 3 => other error
-    '''
-    import subprocess
-    try:
-        ier=subprocess.run([ap.axpath+"/axitra", str(ap.id)])
-    except (FileNotFoundError):
-        print('ERROR: axitra was not found at path: '+ap.axpath+'/axitra')
-        return 1
+        t0 = rise time
+        t1 = optional time for some sources
+        unit = unit on output (1=disp, 2=vel, 3=acc)
+        sfunc = source function signal given as numpy array
 
-    if ier.returncode == 0:
-        print(ap.axpath+'/axitra ran sucessfully')
-        return 0
-    elif ier.returncode == 1:
-        print('ERROR: '+ap.axpath+'/axitra returned error code 1')
-        print('most likely the max iteration number was reached')
-        print(' run axitra from outside python in the current directory to see more details')
-        return 2
-    else:
-        print('ERROR: ' + ap.axpath + '/axitra returned a non zero error code')
-        print(' run axitra from outside python in the current directory to see more details')
-        return 3
-
-def moment_conv(ap, hist, source_type, t0, t1=0., unit=1, sfunc=None):
-    '''
-    Compute the convolution of Green's function obtained by a previous call to moment_green()
-    by source time functions.
-
-    Input:
-    ap = Axitra class instance from moment_green
-    hist = source history array (nsource x 6)
-           index, moment(Nm), strike, dip, rake, 0., 0., delay
-           index, slip, strike, dip, rake, width, height, delay
-    source_type =
-        0 : Dirac
-        1 : Ricker
-        2 : step
-        3 : source time function stored in file <header>.sou
-        4 : triangle
-        5 : ramp
-        6 : not used....
-        7 : True step (watch high frequencies cutoff!!)
-        8 : Trapezoid
-
-    t0 = rise time
-    t1 = optional time for some sources
-    unit = unit on output (1=disp, 2=vel, 3=acc)
-    sfunc = source function signal given as numpy array
-
-    Return:
-        A time 1D ndarray and three 2D ndarrays of size (nstations x ntimes) for each component
-        or None in case of error
-    '''
-
-    import convmPy
-    import os
-
-    #check if axi_??.data files exists
-    try:
-        size = os.path.getsize(ap.sid+'.data')
-        if size == 0:
-            print('Error: No Greens function found, '+ap.sid+'.data is empty')
-            return None
-    except(FileNotFoundError):
-        print('Error: No Greens function found, '+ap.sid+'.data does not exist')
-        return None
-
-
-    # check history file consistency
-    if hist.ndim != 2 or hist.shape[1] != 8:
-        print('source_history_array must be of size [nsource x 6]')
-        print('index, moment(Nm), strike, dip, rake, 0., 0., delay')
-        print('or')
-        print('index, slip, strike, dip, rake, width, height, delay')
-        return None
-    else:
-        np.savetxt(ap.sid + '.hist', hist, fmt=['%d', '%.3g', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f'], delimiter=" ")
-
-    # allocate memory for results
-    sismox = np.zeros((ap.nstation, ap.npt), dtype='float64')
-    sismoy = np.zeros((ap.nstation, ap.npt), dtype='float64')
-    sismoz = np.zeros((ap.nstation, ap.npt), dtype='float64')
-
-    # check whether source time function is given or not
-    if source_type == 3:
+        Return:
+            A time 1D ndarray and three 2D ndarrays of size (nstations x ntimes) for each component
+            or None in case of error
+        '''
         try:
-            if sfunc.ndim == 1 and sfunc.size == ap.npt:
-                np.savetxt(ap.sid + '.sou', sfunc, fmt='%.3g')
-            else:
-                print('wrong array dimension of source time function ('+str(sfunc.shape))
-                print('must be a numpy vector of length '+str(ap.npt))
-                return None
+            import convmPy
         except:
-            print('source_type = 3 requires the source time function to be given as sfunc argument')
+            import sys
+            sys.path.append(ap.axpath)
+            import convmPy
+        import os
+
+        #check if axi_??.data files exists
+        try:
+            size = os.path.getsize(ap.sid+'.data')
+            if size == 0:
+                print('Error: No Greens function found, '+ap.sid+'.data is empty')
+                return None
+        except(FileNotFoundError):
+            print('Error: No Greens function found, '+ap.sid+'.data does not exist')
             return None
 
 
-    # run convolution
-    convmPy.moment_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
+        # check history file consistency
+        if hist.ndim != 2 or hist.shape[1] != 8:
+            print('source_history_array must be of size [nsource x 6]')
+            print('index, moment(Nm), strike, dip, rake, 0., 0., delay')
+            print('or')
+            print('index, slip, strike, dip, rake, width, height, delay')
+            return None
+        else:
+            np.savetxt(ap.sid + '.hist', hist, fmt=['%d', '%.3g', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f'], delimiter=" ")
 
-    # create time vector
-    dt = ap.duration/ap.npt
-    time = np.arange(0, ap.duration, dt,)
+        # allocate memory for results
+        sismox = np.zeros((ap.nstation, ap.npt), dtype='float64')
+        sismoy = np.zeros((ap.nstation, ap.npt), dtype='float64')
+        sismoz = np.zeros((ap.nstation, ap.npt), dtype='float64')
 
-    return time, sismox, sismoy, sismoz
+        # check whether source time function is given or not
+        if source_type == 3:
+            try:
+                if sfunc.ndim == 1 and sfunc.size == ap.npt:
+                    np.savetxt(ap.sid + '.sou', sfunc, fmt='%.3g')
+                else:
+                    print('wrong array dimension of source time function ('+str(sfunc.shape))
+                    print('must be a numpy vector of length '+str(ap.npt))
+                    return None
+            except:
+                print('source_type = 3 requires the source time function to be given as sfunc argument')
+                return None
+
+
+        # run convolution
+        convmPy.moment_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
+
+        # create time vector
+        dt = ap.duration/ap.npt
+        time = np.arange(0, ap.duration, dt,)
+
+        return time, sismox, sismoy, sismoz
+
+    @classmethod
+    def save_files(self, ap):
+        '''
+        Write standard axitra input files: <axi_???.data>, <axi_???.station>, <axi_???.source>
+        :param ap:
+        :return:
+        '''
+
+        from io import StringIO
+
+        # axi.data input file
+        with open(ap.sid+'.data','w') as f:
+            f.writelines(['&input','\n','nfreq='+str(ap.nfreq),',aw=2.'])
+            f.writelines([',tl='+str(ap.duration), ',xl='+str(ap.xl),',ikmax='+str(ap.ikmax),',latlon='+l2f(ap.latlon)])
+            f.writelines([',freesurface='+l2f(ap.freesurface),',sourcefile="'+ap.sid+'.source"'])
+            f.writelines([',statfile="'+ap.sid+'.stat"','\n','//','\n'])
+            # write layer model in a memory file
+            fm = StringIO()
+            np.savetxt(fm, ap.model, fmt='%.3f', delimiter=" ")
+            fm.seek(0)
+            fsm = fm.read()
+            fm.close()
+            # and append its content to axi.data
+            f.write(fsm)
+
+
+        # source coordinates input file
+        np.savetxt(ap.sid + '.source', ap.sources, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
+
+        # station coordinate input file
+        np.savetxt(ap.sid + '.stat', ap.stations, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
+
+    @classmethod
+    def run_green_fortran(self,ap):
+        '''
+        Call the fortran code that compute the Green's function
+        ap: axitra class instance that contains required parameters
+        :return: ier = return code 0 if ok, >=1 if error
+        ier = 1 => executable not found
+        ier = 2 => max iteration number reached
+        ier = 3 => other error
+        '''
+        import subprocess
+        try:
+            ier=subprocess.run([ap.axpath+"/axitra", str(ap.id)])
+        except (FileNotFoundError):
+            print('ERROR: axitra was not found at path: '+ap.axpath+'/axitra')
+            return 1
+
+        if ier.returncode == 0:
+            print(ap.axpath+'/axitra ran sucessfully')
+            return 0
+        elif ier.returncode == 1:
+            print('ERROR: '+ap.axpath+'/axitra returned error code 1')
+            print('most likely the max iteration number was reached')
+            print(' run axitra from outside python in the current directory to see more details')
+            return 2
+        else:
+            print('ERROR: ' + ap.axpath + '/axitra returned a non zero error code')
+            print(' run axitra from outside python in the current directory to see more details')
+            return 3
+
+
+
+
+# -----------------------------------------------------------------------------------------------
+#
+#                                    FORCE CLASS
+#
+# -----------------------------------------------------------------------------------------------
+class force:
+    @classmethod
+    def green(self, axitra_param):
+        '''
+        Compute the Green's functions for the set of parameters supplied and for force sources
+        The (3 x nfreq x nsources x nstations) Green's functions are stored in a file on disk, the next step is to
+        convolve them with the source function(s) using moment_conv() in order to obtain the
+        seismograms.
+
+        This function write several input files on disk and call the fortran program "axitra" according
+        to the path 'axpath'. The input/output files are of the form "axi_???.suffix" where axi_??? can be obtain
+        from the returned Axitra class instance by class.sid
+
+        Input parameters:
+        - axitra_param = an instance of Axitra class
+
+        Return:
+        - axitra_param = a copy of the instance of Axitra class
+        '''
+
+        # save parameters in standard axitra input files
+        self.save_files(axitra_param)
+
+        # call green's function computation
+        self.run_green_fortran(axitra_param)
+
+        return axitra_param
+
+    @classmethod
+    def conv(self, ap, hist, source_type, t0, t1=0., unit=1, sfunc=None):
+        '''
+        Compute the convolution of Green's function obtained by a previous call to moment_green()
+        by source time functions.
+
+        Input:
+        ap = Axitra class instance from moment_green
+        hist = source history array (nsource x 6)
+               index, moment(Nm), strike, dip, rake, 0., 0., delay
+               index, slip, strike, dip, rake, width, height, delay
+        source_type =
+            0 : Dirac
+            1 : Ricker
+            2 : step
+            3 : source time function stored in file <header>.sou
+            4 : triangle
+            5 : ramp
+            6 : not used....
+            7 : True step (watch high frequencies cutoff!!)
+            8 : Trapezoid
+
+        t0 = rise time
+        t1 = optional time for some sources
+        unit = unit on output (1=disp, 2=vel, 3=acc)
+        source_func = source function signal given as numpy array
+
+        Return:
+            A time 1D ndarray and three 2D ndarrays of size (nstations x ntimes) for each component
+        '''
+
+        try:
+            import convfPy
+        except:
+            import sys
+            sys.path.append(ap.axpath)
+            import convfPy
+        import os
+
+        #check if axi_??.data files exists
+        try:
+            size = os.path.getsize(ap.sid+'.data')
+            if size == 0:
+                print('Error: No Greens function found, '+ap.sid+'.data is empty')
+                return None
+        except(FileNotFoundError):
+            print('Error: No Greens function found, '+ap.sid+'.data does not exist')
+            return None
+
+        # check history file consistency
+        if hist.ndim != 2 or hist.shape[1] != 6:
+            print('source_history_array must be of size [nsource x 6]')
+            print('index, fx, fy, fz, Amp (N), delay')
+            return None
+        else:
+            np.savetxt(ap.sid + '.hist', hist, fmt=['%d', '%.3g', '%.3f', '%.3f', '%.3f', '%.3f' ], delimiter=" ")
+
+        # allocate memory for results
+        sismox = np.zeros((ap.nstation, ap.npt), dtype='float64')
+        sismoy = np.zeros((ap.nstation, ap.npt), dtype='float64')
+        sismoz = np.zeros((ap.nstation, ap.npt), dtype='float64')
+
+        # check whether source time function is given or not
+        if source_type == 3:
+            try:
+                if sfunc.ndim == 1 and sfunc.size == ap.npt:
+                    np.savetxt(ap.sid + '.sou', sfunc, fmt='%.3g')
+                else:
+                    print('wrong array dimension of source time function ('+str(sfunc.shape))
+                    print('must be a numpy vector of length '+str(ap.npt))
+                    return
+            except:
+                print('source_type = 3 requires the source time function to be given as sfunc argument')
+                return
+
+
+        # run convolution
+        convfPy.force_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
+
+        # create time vector
+        dt = ap.duration/ap.npt
+        time = np.arange(0, ap.duration, dt,)
+
+        return time, sismox, sismoy, sismoz
+
+    @classmethod
+    def save_files(self, ap):
+        '''
+        write standard axitra input files: <axi_???.data>, <station>, <source>
+        :param ap:
+        :return:
+        '''
+
+        from io import StringIO
+
+        # axi.data input file
+        with open(ap.sid+'.data','w') as f:
+            f.writelines(['&input','\n','nfreq='+str(ap.nfreq),',aw=2.'])
+            f.writelines([',tl='+str(ap.duration), ',xl='+str(ap.xl),',ikmax='+str(ap.ikmax),',latlon='+l2f(ap.latlon)])
+            f.writelines([',freesurface='+l2f(ap.freesurface),',sourcefile="'+ap.sid+'.source"'])
+            f.writelines([',statfile="'+ap.sid+'.stat"','\n','//','\n'])
+            # write layer model in a memory file
+            fm = StringIO()
+            np.savetxt(fm, ap.model, fmt='%.3f', delimiter=" ")
+            fm.seek(0)
+            fsm = fm.read()
+            fm.close()
+            # and append its content to axi.data
+            f.write(fsm)
+
+
+        # source coordinates input file
+        np.savetxt(ap.sid + '.source', ap.sources, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
+
+        # station coordinate input file
+        np.savetxt(ap.sid + '.stat', ap.stations, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
+
+    @classmethod
+    def run_green_fortran(self, ap):
+        '''
+        Call the fortran code that compute the Green's function
+        ap: axitra class instance that contains required parameters
+        :return: ier = return code 0 if ok, >=1 if error
+        ier = 1 => executable not found
+        ier = 2 => max iteration number reached
+        ier = 3 => other error
+        '''
+        import subprocess
+        try:
+            ier=subprocess.run([ap.axpath+"/axitra", str(ap.id)])
+        except (FileNotFoundError):
+            print('ERROR: axitra was not found at path: '+ap.axpath+'/axitra')
+            return 1
+
+        if ier.returncode == 0:
+            print(ap.axpath+'/axitra ran sucessfully')
+            return 0
+        elif ier.returncode == 1:
+            print('ERROR: '+ap.axpath+'/axitra returned error code 1')
+            print('most likely the max iteration number was reached')
+            print(' run axitra from outside python in the current directory to see more details')
+            return 2
+        else:
+            print('ERROR: ' + ap.axpath + '/axitra returned a non zero error code')
+            print(' run axitra from outside python in the current directory to see more details')
+            return 3
+
 
 def l2f(var):
     if var:
         return '.true.'
     else:
         return '.false.'
-
-def moment_save_files(ap):
-    '''
-    Write standard axitra input files: <axi_???.data>, <axi_???.station>, <axi_???.source>
-    :param ap:
-    :return:
-    '''
-
-    from io import StringIO
-
-    # axi.data input file
-    with open(ap.sid+'.data','w') as f:
-        f.writelines(['&input','\n','nfreq='+str(ap.nfreq),',aw=2.'])
-        f.writelines([',tl='+str(ap.duration), ',xl='+str(ap.xl),',ikmax='+str(ap.ikmax),',latlon='+l2f(ap.latlon)])
-        f.writelines([',freesurface='+l2f(ap.freesurface),',sourcefile="'+ap.sid+'.source"'])
-        f.writelines([',statfile="'+ap.sid+'.stat"','\n','//','\n'])
-        # write layer model in a memory file
-        fm = StringIO()
-        np.savetxt(fm, ap.model, fmt='%.3f', delimiter=" ")
-        fm.seek(0)
-        fsm = fm.read()
-        fm.close()
-        # and append its content to axi.data
-        f.write(fsm)
-
-
-    # source coordinates input file
-    np.savetxt(ap.sid + '.source', ap.sources, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
-
-    # station coordinate input file
-    np.savetxt(ap.sid + '.stat', ap.stations, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
-
-# -----------------------------------------------------------------------------------------------
-#
-#                                    FORCE VERSIONS
-#
-# -----------------------------------------------------------------------------------------------
-def force_green(axitra_param):
-    '''
-    Compute the Green's functions for the set of parameters supplied and for force sources
-    The (3 x nfreq x nsources x nstations) Green's functions are stored in a file on disk, the next step is to
-    convolve them with the source function(s) using moment_conv() in order to obtain the
-    seismograms.
-
-    This function write several input files on disk and call the fortran program "axitra" according
-    to the path 'axpath'. The input/output files are of the form "axi_???.suffix" where axi_??? can be obtain
-    from the returned Axitra class instance by class.sid
-
-    Input parameters:
-    - axitra_param = an instance of Axitra class
-
-    Return:
-    - axitra_param = a copy of the instance of Axitra class
-    '''
-
-    # save parameters in standard axitra input files
-    force_save_files(axitra_param)
-
-    # call green's function computation
-    __call_greenf_fort__(axitra_param)
-
-    return axitra_param
-
-def __call_greenf_fort__(ap):
-    '''
-    Call the fortran code that compute the Green's function
-    ap: axitra class instance that contains required parameters
-    :return: ier = return code 0 if ok, >=1 if error
-    ier = 1 => executable not found
-    ier = 2 => max iteration number reached
-    ier = 3 => other error
-    '''
-    import subprocess
-    try:
-        ier=subprocess.run([ap.axpath+"/axitra", str(ap.id)])
-    except (FileNotFoundError):
-        print('ERROR: axitra was not found at path: '+ap.axpath+'/axitra')
-        return 1
-
-    if ier.returncode == 0:
-        print(ap.axpath+'/axitra ran sucessfully')
-        return 0
-    elif ier.returncode == 1:
-        print('ERROR: '+ap.axpath+'/axitra returned error code 1')
-        print('most likely the max iteration number was reached')
-        print(' run axitra from outside python in the current directory to see more details')
-        return 2
-    else:
-        print('ERROR: ' + ap.axpath + '/axitra returned a non zero error code')
-        print(' run axitra from outside python in the current directory to see more details')
-        return 3
-
-
-def force_conv(ap, hist, source_type, t0, t1=0., unit=1, sfunc=None):
-    '''
-    Compute the convolution of Green's function obtained by a previous call to moment_green()
-    by source time functions.
-
-    Input:
-    ap = Axitra class instance from moment_green
-    hist = source history array (nsource x 6)
-           index, moment(Nm), strike, dip, rake, 0., 0., delay
-           index, slip, strike, dip, rake, width, height, delay
-    source_type =
-        0 : Dirac
-        1 : Ricker
-        2 : step
-        3 : source time function stored in file <header>.sou
-        4 : triangle
-        5 : ramp
-        6 : not used....
-        7 : True step (watch high frequencies cutoff!!)
-        8 : Trapezoid
-
-    t0 = rise time
-    t1 = optional time for some sources
-    unit = unit on output (1=disp, 2=vel, 3=acc)
-    source_func = source function signal given as numpy array
-
-    Return:
-        A time 1D ndarray and three 2D ndarrays of size (nstations x ntimes) for each component
-    '''
-
-    import convfPy
-    import os
-
-    #check if axi_??.data files exists
-    try:
-        size = os.path.getsize(ap.sid+'.data')
-        if size == 0:
-            print('Error: No Greens function found, '+ap.sid+'.data is empty')
-            return None
-    except(FileNotFoundError):
-        print('Error: No Greens function found, '+ap.sid+'.data does not exist')
-        return None
-
-    # check history file consistency
-    if hist.ndim != 2 or hist.shape[1] != 6:
-        print('source_history_array must be of size [nsource x 6]')
-        print('index, fx, fy, fz, Amp (N), delay')
-        return None
-    else:
-        np.savetxt(ap.sid + '.hist', hist, fmt=['%d', '%.3g', '%.3f', '%.3f', '%.3f', '%.3f' ], delimiter=" ")
-
-    # allocate memory for results
-    sismox = np.zeros((ap.nstation, ap.npt), dtype='float64')
-    sismoy = np.zeros((ap.nstation, ap.npt), dtype='float64')
-    sismoz = np.zeros((ap.nstation, ap.npt), dtype='float64')
-
-    # check whether source time function is given or not
-    if source_type == 3:
-        try:
-            if sfunc.ndim == 1 and sfunc.size == ap.npt:
-                np.savetxt(ap.sid + '.sou', sfunc, fmt='%.3g')
-            else:
-                print('wrong array dimension of source time function ('+str(sfunc.shape))
-                print('must be a numpy vector of length '+str(ap.npt))
-                return
-        except:
-            print('source_type = 3 requires the source time function to be given as sfunc argument')
-            return
-
-
-    # run convolution
-    convfPy.force_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
-
-    # create time vector
-    dt = ap.duration/ap.npt
-    time = np.arange(0, ap.duration, dt,)
-
-    return time, sismox, sismoy, sismoz
-
-
-def force_save_files(ap):
-    '''
-    write standard axitra input files: <axi_???.data>, <station>, <source>
-    :param ap:
-    :return:
-    '''
-
-    from io import StringIO
-
-    # axi.data input file
-    with open(ap.sid+'.data','w') as f:
-        f.writelines(['&input','\n','nfreq='+str(ap.nfreq),',aw=2.'])
-        f.writelines([',tl='+str(ap.duration), ',xl='+str(ap.xl),',ikmax='+str(ap.ikmax),',latlon='+l2f(ap.latlon)])
-        f.writelines([',freesurface='+l2f(ap.freesurface),',sourcefile="'+ap.sid+'.source"'])
-        f.writelines([',statfile="'+ap.sid+'.stat"','\n','//','\n'])
-        # write layer model in a memory file
-        fm = StringIO()
-        np.savetxt(fm, ap.model, fmt='%.3f', delimiter=" ")
-        fm.seek(0)
-        fsm = fm.read()
-        fm.close()
-        # and append its content to axi.data
-        f.write(fsm)
-
-
-    # source coordinates input file
-    np.savetxt(ap.sid + '.source', ap.sources, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
-
-    # station coordinate input file
-    np.savetxt(ap.sid + '.stat', ap.stations, fmt=['%d','%.3f','%.3f','%.3f'], delimiter=" ")
