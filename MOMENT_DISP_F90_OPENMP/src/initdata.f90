@@ -89,11 +89,6 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
          endif
       enddo
    enddo
-   rewind (in2)
-
-   do is = 1, ns
-         write (in2,"(I10,3F15.3)") index(is), xs(is), ys(is), zs(is)
-   enddo
    close (in2)
    zs2=zs
 
@@ -186,11 +181,6 @@ subroutine initdata(latlon, nr, ns, nc, ncr, ncs, nrs, rmax)
             rindex(ir2) = tmp
          endif
       enddo
-   enddo
-
-   rewind (in3)
-   do ir = 1, nr
-         write (in3,"(I10,3F15.3)") rindex(ir), xr(ir), yr(ir), zr(ir)
    enddo
    close (in3)
 

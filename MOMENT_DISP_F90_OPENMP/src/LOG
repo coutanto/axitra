@@ -32,4 +32,8 @@ Version 20201104.1
 Version 20201113.1
 - correct bug in convmPy where displacement were not ordered according to station indices
 - replace real(kind=8) by a fortran2003 generic type using iso_fortran_env
-- change axitra.py to use more class declarations + add functions
+- change axitra.py to use more class declaration and add functions
+
+Version 20201214.1
+- suppress reordering of source and receiver in the files and add a sort routine in convm
+ This correct a bug in convm(f)Py

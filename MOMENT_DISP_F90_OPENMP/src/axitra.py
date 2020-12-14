@@ -133,7 +133,7 @@ class Axitra:
         :return: None
         '''
         print('xl=',self.xl,' duration=',self.duration, ' nfreq=',self.nfreq,' fmax=',self.fmax,' path_to_binary=',self.axpath)
-        print('nsource=', self.nsource, ' nstat=', self.nstation)
+        print('nsource=', self.nsource, ' nstat=', self.nstation,' id=',self.id)
 
     @classmethod
     def read(self, suffix=None, path='.'):

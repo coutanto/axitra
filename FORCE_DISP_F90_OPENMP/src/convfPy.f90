@@ -44,12 +44,12 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    character header*50, sourcefile*20, statfile*20, chan(3)*2,arg*50
    integer :: id
-   integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, index, indexin
+   integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
                        lat, long, t0, t1, pas, xphi, dt0, rfsou
    complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
-   integer, allocatable      :: iwk(:), isc(:), rindex(:)
+   integer, allocatable      :: iwk(:), isc(:), rindex(:), sindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 disp(:), xs(:), ys(:), zs(:), amp(:)
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
@@ -133,10 +133,14 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    close (10)
 
    do is = 1, ns
-      read (13, *,end=101) index, xs(is), ys(is), zs(is)
+      read (13, *,end=101) sindex(is), xs(is), ys(is), zs(is)
+   enddo
+   ! sort by increasing depth because Green's functions are sorted by source increasing depth
+   call sortByDepth(sindex,xs,ys,zs,ns)
+   do is = 1, ns
       indexin = -1
       rewind (15)
-      do while (indexin .ne. index)
+      do while (indexin .ne. sindex(is))
          read (15, *,end=101) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
       enddo
       delay(is) = delay(is) + dt0
@@ -146,6 +150,8 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       read (14, *,end=101) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
+! sort by increasing depth because Green's functions are sorted by receiver increasing depth
+   call sortByDepth(rindex,xr,yr,zr,nr)
 !
    if (latlon) then
       call ll2km(xr, yr, nr, xs, ys, ns)

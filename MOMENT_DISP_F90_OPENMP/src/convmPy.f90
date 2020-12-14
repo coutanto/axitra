@@ -29,6 +29,10 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    use fsourcem
    use parameter
+
+#if defined(_OPENMP)
+   use omp_lib
+#endif
    implicit none
 
 !f2py intent(in) ics,t0,t1,icc
@@ -48,12 +52,12 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    character header*50, sourcefile*20, statfile*20, chan(3)*2
    integer :: id
-   integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, index, indexin
+   integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, pas, xphi, dt0, rfsou
+                       lat, long, t0, t1, pas, xphi, dt0, rfsou, tmp
    complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
-   integer, allocatable      :: iwk(:), isc(:), rindex(:)
+   integer, allocatable      :: iwk(:), isc(:), rindex(:),sindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
@@ -118,7 +122,7 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    allocate (hc(nc), vp(nc), vs(nc), qp(nc), qs(nc), rho(nc))
    allocate (delay(ns), mu(ns), strike(ns), rake(ns), dip(ns), disp(ns))
    allocate (xs(ns), ys(ns), zs(ns), isc(ns), a(NSTYPE, ns), width(ns), length(ns))
-   allocate (xr(nr), yr(nr), zr(nr), rindex(nr))
+   allocate (xr(nr), yr(nr), zr(nr), rindex(nr),sindex(ns))
 
 ! other input files
 
@@ -137,11 +141,16 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    enddo
    close (10)
 
+   do is=1,ns
+      read (13, *) sindex(is), xs(is), ys(is), zs(is)
+   enddo
+! sort by increasing depth to make sure that
+! it read data in the good ordering
+   call sortByDepth(sindex,xs,ys,zs,ns)
    do is = 1, ns
-      read (13, *) index, xs(is), ys(is), zs(is)
       indexin = -1
       rewind (15)
-      do while (indexin .ne. index)
+      do while (indexin .ne. sindex(is))
          read (15, *) indexin, disp(is), strike(is), dip(is), rake(is), width(is), length(is), delay(is)
       enddo
       delay(is) = delay(is) + dt0
@@ -151,7 +160,8 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       read (14, *) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
-!
+   call sortByDepth(rindex,xr,yr,zr,nr)
+
    if (latlon) then
       call ll2km(xr, yr, nr, xs, ys, ns)
    endif
@@ -253,8 +263,8 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
                uux = uux + uxf(it)*a(it, is)
                uuy = uuy + uyf(it)*a(it, is)
                uuz = uuz + uzf(it)*a(it, is)
-			   if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
-               if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
+	          if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
+                  if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
             enddo
             ux(jf, ir) = ux(jf, ir) + uux*us
             uy(jf, ir) = uy(jf, ir) + uuy*us
@@ -270,7 +280,15 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !++++++++++++
 !                Calcul des sismogrammes
 !++++++++++++
+!$OMP PARALLEL DEFAULT(FIRSTPRIVATE) &
+!$OMP SHARED(ux,uy,uz,nr,mm,rindex,sx,sy,sz,nt,nfreq,tl,aw)
+#if defined(_OPENMP)
+   if (omp_get_thread_num()==1) then
+       write(0,*) 'running openMp on ',omp_get_num_threads(),' threads'
+   endif
+#endif
 
+!$OMP DO ORDERED,SCHEDULE(DYNAMIC)
    do ir = 1, nr
 
 !                on complete le spectre pour les hautes frequences
@@ -295,6 +313,8 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       enddo
 
    enddo
+!$OMP END PARALLEL
+
    close(10)
    close(12)
    close(13)
@@ -368,3 +388,30 @@ subroutine cmoment(mu, strike, dip, rake, disp, surf, a)
    return
 end
 
+subroutine sortByDepth(rindex,xr,yr,zr,nr)
+  implicit none
+  real(kind=8) :: xr(*),yr(*),zr(*),tmp
+  integer      :: nr,ir,jr,itmp,rindex(*)
+!++++++++++++
+!         sort stations according to increasing depth
+!         we do that whatever the ordering was in the station file
+!++++++++++++
+   do ir = 1, nr - 1
+      do jr = ir, nr
+         if (zr(ir) .gt. zr(jr)) then
+            tmp = xr(ir)
+            xr(ir) = xr(jr)
+            xr(jr) = tmp
+            tmp = yr(ir)
+            yr(ir) = yr(jr)
+            yr(jr) = tmp
+            tmp = zr(ir)
+            zr(ir) = zr(jr)
+            zr(jr) = tmp
+            itmp = rindex(ir)
+            rindex(ir) = rindex(jr)
+            rindex(jr) = itmp
+         endif
+      enddo
+   enddo
+end subroutine

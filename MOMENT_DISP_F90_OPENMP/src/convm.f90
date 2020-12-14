@@ -28,12 +28,12 @@ program convm
 
    character header*10, sourcefile*20, statfile*20, chan(3)*2,arg*10
 
-   integer:: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, index, indexin
+   integer:: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, indexin
    real(kind=fd)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
                        lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou,mt
    complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
-   integer, allocatable      :: iwk(:), isc(:), rindex(:)
+   integer, allocatable      :: iwk(:), isc(:), rindex(:), sindex(:)
    real(kind=fd), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
    real(kind=fs), allocatable :: sx(:), sy(:), sz(:)
@@ -96,7 +96,7 @@ write(0,*) '<',trim(header)//'.data','>'
    allocate (hc(nc), vp(nc), vs(nc), qp(nc), qs(nc), rho(nc))
    allocate (delay(ns), mu(ns), strike(ns), rake(ns), dip(ns), disp(ns))
    allocate (xs(ns), ys(ns), zs(ns), isc(ns), a(NSTYPE, ns), width(ns), length(ns))
-   allocate (xr(nr), yr(nr), zr(nr), rindex(nr))
+   allocate (xr(nr), yr(nr), zr(nr), rindex(nr),sindex(ns))
 
 ! other input files
 
@@ -164,10 +164,15 @@ write(0,*) '<',trim(header)//'.data','>'
    close (10)
 
    do is = 1, ns
-      read (13, *) index, xs(is), ys(is), zs(is)
+      read (13, *) sindex(is), xs(is), ys(is), zs(is)
+   enddo
+! sort by increasing depth because Green's functions are sorted by source increasing depth
+   call sortByDepth(sindex,xs,ys,zs,ns)
+
+   do is = 1,ns
       indexin = -1
       rewind (15)
-      do while (indexin .ne. index)
+      do while (indexin .ne. sindex(is))
          read (15, *) indexin, disp(is), strike(is), dip(is), rake(is), width(is), length(is), delay(is)
       enddo
       delay(is) = delay(is) + dt0
@@ -177,6 +182,8 @@ write(0,*) '<',trim(header)//'.data','>'
       read (14, *) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
+! sort by increasing depth because Green's functions are sorted by receiver increasing depth
+   call sortByDepth(rindex,xr,yr,zr,nr)
 !
    if (latlon) then
       call ll2km(xr, yr, nr, xs, ys, ns)
@@ -412,3 +419,30 @@ real function hanning(i, max, perc)
       hanning = 1.
    endif
 end
+subroutine sortByDepth(rindex,xr,yr,zr,nr)
+  implicit none
+  real(kind=8) :: xr(*),yr(*),zr(*),tmp
+  integer      :: nr,ir,jr,itmp,rindex(*)
+!++++++++++++
+!         sort stations according to increasing depth
+!         we do that whatever the ordering was in the station file
+!++++++++++++
+   do ir = 1, nr - 1
+      do jr = ir, nr
+         if (zr(ir) .gt. zr(jr)) then
+            tmp = xr(ir)
+            xr(ir) = xr(jr)
+            xr(jr) = tmp
+            tmp = yr(ir)
+            yr(ir) = yr(jr)
+            yr(jr) = tmp
+            tmp = zr(ir)
+            zr(ir) = zr(jr)
+            zr(jr) = tmp
+            itmp = rindex(ir)
+            rindex(ir) = rindex(jr)
+            rindex(jr) = itmp
+         endif
+      enddo
+   enddo
+end subroutine

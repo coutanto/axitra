@@ -27,12 +27,12 @@ program convm
 
    character header*10, sourcefile*20, statfile*20, chan(3)*2, arg*10
 
-   integer         ::  jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, index, indexin
+   integer         ::  jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, indexin
    real(kind=fd)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref,  &
                        lat, long, t0, t1, hanning, xphi, dt0, pas, rfsou
    complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical         ::  latlon,freesurface
-   integer, allocatable         :: iwk(:), isc(:), rindex(:)
+   integer, allocatable         :: iwk(:), isc(:), rindex(:), sindex(:)
    real(kind=fd), allocatable    :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), &
                                    zr(:), a(:, :), qp(:), qs(:), xs(:), ys(:), zs(:), amp(:)
    real(kind=fs), allocatable    :: sx(:), sy(:), sz(:)
@@ -144,10 +144,15 @@ program convm
    close (10)
 
    do is = 1, ns
-      read (13, *) index, xs(is), ys(is), zs(is)
+      read (13, *) sindex(is), xs(is), ys(is), zs(is)
+   enddo
+! sort by increasing depth because Green's functions are sorted by source increasing depth
+   call sortByDepth(sindex,xs,ys,zs,ns)
+
+   do is = 1, ns
       indexin = -1
       rewind (15)
-      do while (indexin .ne. index)
+      do while (indexin .ne. sindex(is))
 !  read: index, fx , fy, fz, amplitude, time_delay
          read (15, *) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
       enddo
@@ -158,6 +163,9 @@ program convm
       read (14, *) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
+! sort by increasing depth because Green's functions are sorted by receiver increasing depth
+   call sortByDepth(rindex,xr,yr,zr,nr)
+
 !
    if (latlon) then
       call ll2km(xr, yr, nr, xs, ys, ns)
@@ -335,3 +343,30 @@ real function hanning(i, max, perc)
       hanning = 1.
    endif
 end
+subroutine sortByDepth(rindex,xr,yr,zr,nr)
+  implicit none
+  real(kind=8) :: xr(*),yr(*),zr(*),tmp
+  integer      :: nr,ir,jr,itmp,rindex(*)
+!++++++++++++
+!         sort stations according to increasing depth
+!         we do that whatever the ordering was in the station file
+!++++++++++++
+   do ir = 1, nr - 1
+      do jr = ir, nr
+         if (zr(ir) .gt. zr(jr)) then
+            tmp = xr(ir)
+            xr(ir) = xr(jr)
+            xr(jr) = tmp
+            tmp = yr(ir)
+            yr(ir) = yr(jr)
+            yr(jr) = tmp
+            tmp = zr(ir)
+            zr(ir) = zr(jr)
+            zr(jr) = tmp
+            itmp = rindex(ir)
+            rindex(ir) = rindex(jr)
+            rindex(jr) = itmp
+         endif
+      enddo
+   enddo
+end subroutine
