@@ -114,7 +114,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    allocate (hc(nc), vp(nc), vs(nc), qp(nc), qs(nc), rho(nc))
    allocate (delay(ns), amp(ns))
    allocate (xs(ns), ys(ns), zs(ns), isc(ns), a(NSTYPE, ns))
-   allocate (xr(nr), yr(nr), zr(nr), rindex(nr))
+   allocate (xr(nr), yr(nr), zr(nr), rindex(nr),sindex(ns))
 
 ! other input files
    open (15, form='formatted', file=trim(header)//'.hist')
