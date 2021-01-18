@@ -63,8 +63,15 @@ program convm
 
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
+! count number of layer
    read (10, input)
-
+   nc=0
+   do while(.true.)
+     read(10,*,end=91)
+     nc=nc+1
+   end do
+91 rewind(10)
+   read (10, input)
 
 ! other input files
    open (13, form='formatted',file=sourcefile)
@@ -87,7 +94,7 @@ program convm
 ! allocate space knowing number of sources, receivers and layers
    allocate (hc(nc), vp(nc), vs(nc), qp(nc), qs(nc), rho(nc))
    allocate (delay(ns), xs(ns), ys(ns), zs(ns), a(NSTYPE , ns), amp(ns),isc(ns))
-   allocate (xr(nr), yr(nr), zr(nr), rindex(nr))
+   allocate (xr(nr), yr(nr), zr(nr), rindex(nr),sindex(ns))
 
 ! other input files
 
