@@ -136,7 +136,7 @@ class Axitra:
         print('nsource=', self.nsource, ' nstat=', self.nstation,' id=',self.id)
 
     @classmethod
-    def read(self, suffix=None, path='.'):
+    def read(self, suffix=None, axpath='.'):
         '''
         read an existing axi_suffix.data file and the associate "source" and "station" files
         and return an Axitra class instance.
@@ -153,15 +153,15 @@ class Axitra:
 
         if suffix:
             try:
-                ier = subprocess.run([path + "/axitra2py", suffix])
+                ier = subprocess.run([axpath + "/axitra2py", suffix])
             except (FileNotFoundError):
-                print('ERROR: axitra2py was not found at path: ' + path + '/axitra2py')
+                print('ERROR: axitra2py was not found at path: ' + axpath + '/axitra2py')
                 return None
         else:
             try:
-                ier = subprocess.run([path + "/axitra2py"])
+                ier = subprocess.run([axpath + "/axitra2py"])
             except (FileNotFoundError):
-                print('ERROR: axitra2py was not found at path: ' + path + '/axitra2py')
+                print('ERROR: axitra2py was not found at path: ' + axpath + '/axitra2py')
                 return None
 
         if ier.returncode == 0:
@@ -216,7 +216,7 @@ class Axitra:
             print('ERROR: could not run axitra2py successfully')
             return None
 
-        ap = Axitra(model, station, source, nfreq/tl, tl, xl, latlon, freesurface, ikmax, path, id=suffix , aw=aw)
+        ap = Axitra(model, station, source, nfreq/tl, tl, xl, latlon, freesurface, ikmax, axpath, id=suffix , aw=aw)
         return ap
 # -----------------------------------------------------------------------------------------------
 #
@@ -265,13 +265,15 @@ class moment:
         source_type =
             0 : Dirac
             1 : Ricker
-            2 : step
+            2 : smooth step (not causal)
             3 : source time function stored in file <header>.sou
-            4 : triangle
-            5 : ramp
+            4 : integral of triangle step
+            5 : ramp step
             6 : not used....
             7 : True step (watch high frequencies cutoff!!)
-            8 : Trapezoid
+            8 : integral of trapezoid step (~Haskel model)
+        add +10 to source_type to get only source time function but no convolution
+        (useful for checking)
 
         t0 = rise time
         t1 = optional time for some sources
@@ -317,7 +319,7 @@ class moment:
         sismoz = np.zeros((ap.nstation, ap.npt), dtype='float64')
 
         # check whether source time function is given or not
-        if source_type == 3:
+        if source_type == 3 or source_type == 13:
             try:
                 if sfunc.ndim == 1 and sfunc.size == ap.npt:
                     np.savetxt(ap.sid + '.sou', sfunc, fmt='%.3g')
@@ -326,9 +328,8 @@ class moment:
                     print('must be a numpy vector of length '+str(ap.npt))
                     return None
             except:
-                print('source_type = 3 requires the source time function to be given as sfunc argument')
+                print('source_type = [1]3 requires the source time function to be given as sfunc argument')
                 return None
-
 
         # run convolution
         convmPy.moment_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
