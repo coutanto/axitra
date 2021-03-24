@@ -37,3 +37,13 @@ Version 20201113.1
 Version 20201214.1
 - suppress reordering of source and receiver in the files and add a sort routine in convm
  This correct a bug in convm(f)Py
+
+Version 20212403.1
+- correct dirac source time function normalization w/r FFT, 
+  add an option to convm to obtain source time function only (no convolution)
+- move parameter.o compilation on head of OBJ2
+- correct convmPy like convm
+- change coefs in fsource
+- more help information in axitra.py for convolution
+- add a test example to check low frequency amplitude spectrum versus moment
+- fix SAC scale header value to default instead of 0 to conform to ObsPy
