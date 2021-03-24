@@ -29,7 +29,7 @@ program convm
 
    integer         ::  jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, indexin
    real(kind=fd)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref,  &
-                       lat, long, t0, t1, hanning, xphi, dt0, pas, rfsou
+                       lat, long, t0, t1, hanning, xphi, dt0, pas, rfsou,stime
    complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical         ::  latlon,freesurface
    integer, allocatable         :: iwk(:), isc(:), rindex(:), sindex(:)
@@ -116,6 +116,14 @@ program convm
    write (6, *) '6 : not used....'
    write (6, *) '7 : True step (watch high frequencies cutoff!!)'
    read (5, *) ics
+
+! test wether we want only the source time function
+   if (ics>=10) then
+     ics=ics-10
+     stime = 0.d0
+   else
+     stime = 1.d0
+   endif
 
    if (ics .eq. 1) then
       write (6, *) "Ricker pseudo period?"
@@ -208,9 +216,14 @@ program convm
    enddo
 
 !++++++++++++
-!        Read Green's functions
+! read spatial periodicity and time duration
 !++++++++++++
+   open (10, form='formatted', file=trim(header)//'.head')
+   read (10,*) xl,tl
 
+!++++++++++++
+! Initialize time and dimension parameters
+!++++++++++++
    xmm = log(real(nfreq))/log(2.)
    mm = int(xmm) + 1
    if (xmm-mm+1 >0) mm=mm+1
@@ -220,28 +233,31 @@ program convm
    ux = 0.d0
    uy = 0.d0
    uz = 0.d0
+   dfreq = 1./tl
+   pas = tl/nt
+   spas=sngl(pas)
+   aw = -pi*aw/tl
 
 ! if source time function is supplied, read it
    if (ics .eq. 3) then
+     write(0,*) 'convms try reading ',nt,'time points from file ',trim(header)//'.sou'
      open (16, form='formatted', file=trim(header)//'.sou')
      allocate(fsou(nt))
      fsou=0.d0
      do it=1,nt
        read(16,*, end=1960) rfsou
        ck = float(it - 1)/nt
-       cc = exp(aw*tl*ck)/tl
+       cc = exp(aw*tl*ck)
        fsou(it)=rfsou*cc
      enddo
+! direct FFT normalization
+! Since the same call is used for inverse transform
+! needs conjugate
      call fft2cd(fsou, mm, iwk)
+     fsou=conjg(fsou)
+
 1960 continue
    endif
-
-   open (10, form='formatted', file=trim(header)//'.head')
-   read (10,*) xl,tl
-   dfreq = 1./tl
-   pas = tl/nt
-   spas=sngl(pas)
-   aw = -pi*aw/tl
 
 ! loop over frequencies
 
@@ -276,13 +292,12 @@ program convm
             uuy = 0.
             uuz = 0.
             do it = 1, NSTYPE
-               uux = uux + uxf(it)*a(it, is)
-               uuy = uuy + uyf(it)*a(it, is)
-               uuz = uuz + uzf(it)*a(it, is)
+               uux = uux + (uxf(it)*stime + (1.d0-stime))*a(it, is)
+               uuy = uuy + (uyf(it)*stime + (1.d0-stime))*a(it, is)
+               uuz = uuz + (uzf(it)*stime + (1.d0-stime))*a(it, is)
                if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
                if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
             enddo
-
             ux(jf, ir) = ux(jf, ir) + uux*us
             uy(jf, ir) = uy(jf, ir) + uuy*us
             uz(jf, ir) = uz(jf, ir) + uuz*us
@@ -315,7 +330,7 @@ program convm
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/tl
+         cc = exp(-aw*tl*ck)/nt
 
          sx(it) = real(ux(it, ir)*cc)
          sy(it) = real(uy(it, ir)*cc)
