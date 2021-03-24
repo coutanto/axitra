@@ -46,7 +46,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    integer :: id
    integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, pas, xphi, dt0, rfsou
+                       lat, long, t0, t1, pas, dt0, rfsou, stime
    complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:), sindex(:)
@@ -74,6 +74,15 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
      write(header,"('axi_',I3)") id
    endif
 
+! test wether we want only the source time function
+   stime = 1.d0
+   if (ics>=10) then
+   write(0,*) 'do not convolve, output only source time function',ics
+     ics=ics-10
+     stime = 0.d0
+   endif
+
+
 ! read binary results from axitra
 ! We assume here that record length is given in byte.
 ! For intel compiler, it means using "assume byterecl" option
@@ -83,7 +92,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
-   read (10, input,end=101)
+   read (10, input)
 ! count number of layer
    nc=0
    do while(.true.)
@@ -128,26 +137,27 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !                 medium, source and station
 !++++++++++++
    do ic = 1, nc
-      read (10, *,end=101) hc(ic), vp(ic), vs(ic), rho(ic), qp(ic), qs(ic)
+      read (10, *) hc(ic), vp(ic), vs(ic), rho(ic), qp(ic), qs(ic)
    enddo
    close (10)
 
    do is = 1, ns
-      read (13, *,end=101) sindex(is), xs(is), ys(is), zs(is)
+      read (13, *) sindex(is), xs(is), ys(is), zs(is)
    enddo
-   ! sort by increasing depth because Green's functions are sorted by source increasing depth
+   ! sort by increasing depth to make sure that
+   ! it read data in the correct ordering
    call sortByDepth(sindex,xs,ys,zs,ns)
    do is = 1, ns
       indexin = -1
       rewind (15)
       do while (indexin .ne. sindex(is))
-         read (15, *,end=101) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
+         read (15, *) indexin, a(1,is), a(2,is), a(3,is), amp(is), delay(is)
       enddo
       delay(is) = delay(is) + dt0
    enddo
 
    do ir = 1, nr
-      read (14, *,end=101) rindex(ir), xr(ir), yr(ir), zr(ir)
+      read (14, *) rindex(ir), xr(ir), yr(ir), zr(ir)
 ! reference: x = north; y = east
    enddo
 ! sort by increasing depth because Green's functions are sorted by receiver increasing depth
@@ -200,6 +210,9 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    ux = 0.d0
    uy = 0.d0
    uz = 0.d0
+   dfreq = 1./tl
+   pas = tl/nt
+   aw = -pi*aw/tl
 
 ! if source time function is supplied, read it
    if (ics .eq. 3) then
@@ -209,16 +222,18 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
      do it=1,nt
        read(16,*, end=1960) rfsou
        ck = float(it - 1)/nt
-       cc = exp(aw*tl*ck)/tl
+       cc = exp(aw*tl*ck)
        fsou(it)=rfsou*cc
      enddo
+     ! direct FFT normalization
+     ! Since the same call is used for inverse transform
+     ! needs conjugate
      call fft2cd(fsou, mm, iwk)
+     fsou=conjg(fsou)
 1960 continue
    endif
 
-   dfreq = 1./tl
-   pas = tl/nt
-   aw = -pi*aw/tl
+
 
 ! loop over frequencies
    open (10, form='formatted', file=trim(header)//'.head')
@@ -235,11 +250,6 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       endif
 
       do is = 1, ns ! loop over source
-         xphi = atan2(dble(yr(1) - ys(is)), dble(xr(1) - xs(is)))
-!         rvel(is) = rpvel*vs(isc(is))/(1.-rpvel*cos(xphi - strike(is)))
-!         if (ics .ne. 8) then
-!            t1 = length(is)/rvel(is)
-!         endif
          us = freqs*deriv*exp(-ai*omega*delay(is))
 
          do ir = 1, nr ! loop over receiver
@@ -251,9 +261,9 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
             uuy = 0.
             uuz = 0.
             do it = 1, NSTYPE
-               uux = uux + uxf(it)*a(it, is)
-               uuy = uuy + uyf(it)*a(it, is)
-               uuz = uuz + uzf(it)*a(it, is)
+               uux = uux + (uxf(it)*stime + (1.d0-stime))*a(it, is)
+               uuy = uuy + (uyf(it)*stime + (1.d0-stime))*a(it, is)
+               uuz = uuz + (uzf(it)*stime + (1.d0-stime))*a(it, is)
 			   if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
                if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
             enddo
@@ -289,7 +299,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/tl
+         cc = exp(-aw*tl*ck)/nt
          sx(it,rindex(ir)) = (ux(it, ir)*cc)
          sy(it,rindex(ir)) = (uy(it, ir)*cc)
          sz(it,rindex(ir)) = (uz(it, ir)*cc)
@@ -303,6 +313,40 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    close(15)
    close(16)
 
-101 continue
+   deallocate (hc, vp, vs, qp, qs, rho)
+   deallocate (xs, ys, zs, isc, amp, delay)
+   deallocate (xr, yr, zr, rindex,sindex)
+   if (ics==3) deallocate (fsou)
+   deallocate (iwk)
+   deallocate (ux, uy, uz)
+
    
 end
+
+subroutine sortByDepth(rindex,xr,yr,zr,nr)
+  implicit none
+  real(kind=8) :: xr(*),yr(*),zr(*),tmp
+  integer      :: nr,ir,jr,itmp,rindex(*)
+!++++++++++++
+!         sort stations according to increasing depth
+!         we do that whatever the ordering was in the station file
+!++++++++++++
+   do ir = 1, nr - 1
+      do jr = ir, nr
+         if (zr(ir) .gt. zr(jr)) then
+            tmp = xr(ir)
+            xr(ir) = xr(jr)
+            xr(jr) = tmp
+            tmp = yr(ir)
+            yr(ir) = yr(jr)
+            yr(jr) = tmp
+            tmp = zr(ir)
+            zr(ir) = zr(jr)
+            zr(jr) = tmp
+            itmp = rindex(ir)
+            rindex(ir) = rindex(jr)
+            rindex(jr) = itmp
+         endif
+      enddo
+   enddo
+end subroutine
