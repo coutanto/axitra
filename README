@@ -1,4 +1,4 @@
-Axitra Force & Moment versions 06.08.2020
+Axitra Force & Moment versions 
 
 Should you encounter any problem using the program, please feel free to contact me at:
 Olivier Coutant: olivier.coutant@univ-grenoble-alpes.fr
@@ -88,13 +88,6 @@ axitra is then ready to run. The different data files are:
 - axi[.suffix].res  (binary transfert function)
 (3) input for the convolution program convms
 - axi[.suffix].hist
-
-++++++++++++++++++         ATTENTION       +++++++++++++++++++++++++++++++++
-The sources/receivers are sorted by axitra according to increasing depth.
-The reordering is done both in the receiver description file and in 
-the seismogram file. Check the header (axi.head or axi.res) for the new ordering.
-Same thing for the sources, but it is less crucial since they are indexed.
-++++++++++++++++++         ATTENTION       +++++++++++++++++++++++++++++++++
 
 PARAMETERS (file "parameter.f90")
 ==========
