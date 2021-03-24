@@ -40,7 +40,7 @@ all:	axitra convms
 
 OBJ1=parameter.o dimension1.o dimension2.o allocateArray.o initdata.o reflect0.o reflect1.o reflect2.o reflect3.o \
 reflect4.o reflect5.o ff0ad.o dll2km.o axitra.o
-OBJ2=dll2km.o dimension1.o dimension2.o parameter.o fft2cd.o fsource.o convm.o
+OBJ2=parameter.o dll2km.o dimension1.o dimension2.o  fft2cd.o fsource.o convm.o
 #######################################
 #			AXITRA
 #######################################
@@ -52,7 +52,7 @@ axitra:	$(INC) $(OBJ1)
 #			CONVM
 ######################################
 
-convms: $(OBJ2) writesac.o
+convms: $(OBJ2) parameter.o writesac.o
 	$(FC) $(FFLAGS) -o $@ writesac.o $(OBJ2)
 
 ######################################
