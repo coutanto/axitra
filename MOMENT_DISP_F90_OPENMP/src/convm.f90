@@ -30,7 +30,7 @@ program convm
 
    integer:: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, nt, io, indexin
    real(kind=fd)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou,mt
+                        lat, long, t0, t1, hanning, pas, xphi, dt0, rfsou, stime
    complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:), sindex(:)
@@ -65,7 +65,6 @@ program convm
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
 ! count number of layer
-write(0,*) '<',trim(header)//'.data','>'
    read (10, input)
    nc=0
    do while(.true.)
@@ -106,7 +105,8 @@ write(0,*) '<',trim(header)//'.data','>'
 ! read source function type from keyboard
 ! + +++++++++++
 
-   write (6, *) 'source function?'
+   write (6, *) 'Select the Source time function'
+   write (6,*)  'Add +10 to compute only the time function (no convolution)'
    write (6, *) '0 : Dirac'
    write (6, *) '1 : Ricker'
    write (6, *) '2 : step '
@@ -117,6 +117,15 @@ write(0,*) '<',trim(header)//'.data','>'
    write (6, *) '7 : True step (watch high frequencies cutoff!!)'
    write (6, *) '8 : Trapezoid'
    read (5, *) ics
+   
+   ! test wether we want only the source time function
+   if (ics>=10) then
+       ics=ics-10
+       stime = 0.d0
+   else
+       stime = 1.d0
+   endif
+
    if (ics .eq. 8) then
       write (6, *) "rise time t0 ?"
       read (5, *) t0
@@ -124,12 +133,7 @@ write(0,*) '<',trim(header)//'.data','>'
       read (5, *) t1
       t1 = t1 + t0
    endif
-!   if (ics .eq. 6) then
-!      write (6, *) "rise time?"
-!      read (5, *) t0
-!      write (6, *) "rupture velocity(fract. of S wave eg. 0.8)?"
-!      read (5, *) rpvel
-!   endif
+
    if (ics .eq. 1) then
       write (6, *) "Ricker pseudo period?"
       read (5, *) t0
@@ -190,7 +194,7 @@ write(0,*) '<',trim(header)//'.data','>'
    endif
 
 !++++++++++++
-!        Parametres sources
+!        source Parameters
 !++++++++++++
 !     conversion depth -> thickness
    if (hc(1) .eq. 0.) then
@@ -219,7 +223,13 @@ write(0,*) '<',trim(header)//'.data','>'
    enddo
 
 !++++++++++++
-!        Read Green's functions
+! read spatial periodicity and time duration
+!++++++++++++
+   open (10, form='formatted', file=trim(header)//'.head')
+   read (10,*) xl,tl
+
+!++++++++++++
+! Initialize time and dimension parameters
 !++++++++++++
    xmm = log(real(nfreq))/log(2.)
    mm = int(xmm) + 1
@@ -230,29 +240,33 @@ write(0,*) '<',trim(header)//'.data','>'
    ux = 0.d0
    uy = 0.d0
    uz = 0.d0
+   aw = -pi*aw/tl
+   dfreq = 1./tl
+   pas = tl/nt
+   spas=sngl(pas)
 
 ! if source time function is supplied, read it
    if (ics .eq. 3) then
+     write(0,*) 'convms try reading ',nt,'time points from file ',trim(header)//'.sou'
      open (16, form='formatted', file=trim(header)//'.sou')
      allocate(fsou(nt))
      fsou=0.d0
      do it=1,nt
        read(16,*, end=1960) rfsou
        ck = float(it - 1)/nt
-       cc = exp(aw*tl*ck)/tl
+       cc = exp(aw*tl*ck)
        fsou(it)=rfsou*cc
      enddo
+     ! direct FFT normalization
+     ! Since the same call is used for inverse transform
+     ! needs conjugate
      call fft2cd(fsou, mm, iwk)
+     fsou=conjg(fsou)
+
 1960 continue
    endif
-   open (10, form='formatted', file=trim(header)//'.head')
-   read (10,*) xl,tl
 
-   dfreq = 1./tl
-   pas = tl/nt
-   spas=sngl(pas)
-   aw = -pi*aw/tl
-   mt=2**mm
+
 ! loop over frequencies
 
    do jf = 1, nfreq
@@ -283,10 +297,10 @@ write(0,*) '<',trim(header)//'.data','>'
             uuy = 0.
             uuz = 0.
             do it = 1, NSTYPE
-               uux = uux + uxf(it)*a(it, is)
-               uuy = uuy + uyf(it)*a(it, is)
-               uuz = uuz + uzf(it)*a(it, is)
-			   if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
+               uux = uux + (uxf(it)*stime + (1.d0-stime))*a(it, is)
+               uuy = uuy + (uyf(it)*stime + (1.d0-stime))*a(it, is)
+               uuz = uuz + (uzf(it)*stime + (1.d0-stime))*a(it, is)
+               if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
                if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
             enddo
             ux(jf, ir) = ux(jf, ir) + uux*us
@@ -309,21 +323,22 @@ write(0,*) '<',trim(header)//'.data','>'
 
 !               fill-in symetric part of the spectrum
 !               reverse imaginery part to perform inverse FFT
-
       do jf = nt + 2 - nfreq, nt
          ux(jf, ir) = conjg(ux(nt + 2 - jf, ir))
          uy(jf, ir) = conjg(uy(nt + 2 - jf, ir))
          uz(jf, ir) = conjg(uz(nt + 2 - jf, ir))
       enddo
 
+! inverse fourier transform
       call fft2cd(ux(1, ir), mm, iwk)
       call fft2cd(uy(1, ir), mm, iwk)
       call fft2cd(uz(1, ir), mm, iwk)
 
+! correct for time domain effect of Green's function imaginery part (aw)
+! and apply Fourier transform normalization (1/nt)
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/tl!/mt modif OC
-
+         cc = exp(-aw*tl*ck)/nt
          sx(it) = real(ux(it, ir)*cc)
          sy(it) = real(uy(it, ir)*cc)
          sz(it) = real(uz(it, ir)*cc)
