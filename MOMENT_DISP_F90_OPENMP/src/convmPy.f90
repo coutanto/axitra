@@ -46,6 +46,7 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
 
    integer :: nt,nstat,nsx,ntx,n1y,n2y,n1z,n2z
+   ! setting below (kind=fd) yield wrong array size
    real(kind=8) :: sx(ntx,nsx),sy(n2y,n1y),sz(n2z,n1z)
 
    integer ntp, nrtp, icc, ics, ic, base
@@ -54,13 +55,13 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    integer :: id
    integer :: jf, ir, is, it, nc, ns, nr, nfreq, ikmax, mm, io, indexin
    real(kind=8)    ::  tl, xl, uconv, hh, zsc, dfreq, freq, aw, ck, xmm, xref, yref, &
-                       lat, long, t0, t1, pas, xphi, dt0, rfsou, tmp
-   complex(kind=8) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
+                       lat, long, t0, t1, pas, dt0, rfsou, tmp, stime
+   complex(kind=fd) ::  omega, uxf(NSTYPE), uyf(NSTYPE), uzf(NSTYPE), deriv, us, uux, uuy, uuz, cc, freqs
    logical                   :: latlon,freesurface
    integer, allocatable      :: iwk(:), isc(:), rindex(:),sindex(:)
    real(kind=8), allocatable :: hc(:), vp(:), vs(:), rho(:), delay(:), xr(:), yr(:), zr(:), a(:, :), qp(:), qs(:), &
                                 mu(:), strike(:), dip(:), rake(:), disp(:), xs(:), ys(:), zs(:), width(:), length(:)
-   complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
+   complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:),ctest
 
    namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
@@ -82,12 +83,19 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
      write(header,"('axi_',I3)") id
    endif
 
+! test wether we want only the source time function
+stime = 1.d0
+if (ics>=10) then
+write(0,*) 'do not convolve, output only source time function',ics
+    ics=ics-10
+    stime = 0.d0
+endif
+
 ! read binary results from axitra
 ! We assume here that record length is given in byte.
 ! For intel compiler, it means using "assume byterecl" option
 ! record length is 6 x (complex double precision) = 6 x 2 x 8 bytes
    open (12, access='direct', recl=NSTYPE*2*8, form='unformatted', file=trim(header)//'.res')
-
 
 ! read input file to axitra
    open (10, form='formatted', file=trim(header)//'.data')
@@ -145,7 +153,7 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       read (13, *) sindex(is), xs(is), ys(is), zs(is)
    enddo
 ! sort by increasing depth to make sure that
-! it read data in the good ordering
+! it read data in the correct ordering
    call sortByDepth(sindex,xs,ys,zs,ns)
    do is = 1, ns
       indexin = -1
@@ -197,37 +205,40 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
 
 !++++++++++++
-!        Lecture fonctions de transfert
+! Initialize time and dmention parameters
 !++++++++++++
    xmm = log(real(nfreq))/log(2.)
    mm = int(xmm) + 1
    if (xmm-mm+1 >0) mm=mm+1
-
    nt = 2**mm
    allocate (iwk(nt))
    allocate (ux(nt, nr), uy(nt, nr), uz(nt, nr))
    ux = 0.d0
    uy = 0.d0
    uz = 0.d0
+   dfreq = 1./tl
+   pas = tl/nt
+   aw = -pi*aw/tl
 
 ! if source time function is supplied, read it
    if (ics .eq. 3) then
+     write(0,*) 'convmPy try reading ',nt,'time points from file ',trim(header)//'.sou'
      open (16, form='formatted', file=trim(header)//'.sou')
      allocate(fsou(nt))
      fsou=0.d0
      do it=1,nt
        read(16,*, end=1960) rfsou
        ck = float(it - 1)/nt
-       cc = exp(aw*tl*ck)/tl
+       cc = exp(aw*tl*ck)
        fsou(it)=rfsou*cc
      enddo
+     ! direct FFT normalization
+     ! Since the same call is used for inverse transform
+     ! needs conjugate
      call fft2cd(fsou, mm, iwk)
+     fsou=conjg(fsou)
 1960 continue
    endif
-
-   dfreq = 1./tl
-   pas = tl/nt
-   aw = -pi*aw/tl
 
 ! loop over frequencies
    open (10, form='formatted', file=trim(header)//'.head')
@@ -244,11 +255,6 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       endif
 
       do is = 1, ns ! loop over source
-         xphi = atan2(dble(yr(1) - ys(is)), dble(xr(1) - xs(is)))
-!         rvel(is) = rpvel*vs(isc(is))/(1.-rpvel*cos(xphi - strike(is)))
-!         if (ics .ne. 8) then
-!            t1 = length(is)/rvel(is)
-!         endif
          us = freqs*deriv*exp(-ai*omega*delay(is))
 
          do ir = 1, nr ! loop over receiver
@@ -260,11 +266,11 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
             uuy = 0.
             uuz = 0.
             do it = 1, NSTYPE
-               uux = uux + uxf(it)*a(it, is)
-               uuy = uuy + uyf(it)*a(it, is)
-               uuz = uuz + uzf(it)*a(it, is)
-	          if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
-                  if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
+               uux = uux + (uxf(it)*stime + (1.d0-stime))*a(it, is)
+               uuy = uuy + (uyf(it)*stime + (1.d0-stime))*a(it, is)
+               uuz = uuz + (uzf(it)*stime + (1.d0-stime))*a(it, is)
+               if (isnan(real(uux)) .or. isnan(real(uuy)) .or. isnan(real(uuz))) write(0,*) 'real part uux,uuy or uuz is NaN'
+               if (isnan(imag(uux)) .or. isnan(imag(uuy)) .or. isnan(imag(uuz))) write(0,*) 'imag part uux,uuy or uuz is NaN'
             enddo
             ux(jf, ir) = ux(jf, ir) + uux*us
             uy(jf, ir) = uy(jf, ir) + uuy*us
@@ -306,15 +312,15 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/tl
+         cc = exp(-aw*tl*ck)/nt
          sx(it,rindex(ir)) = (ux(it, ir)*cc)
          sy(it,rindex(ir)) = (uy(it, ir)*cc)
          sz(it,rindex(ir)) = (uz(it, ir)*cc)
       enddo
 
+
    enddo
 !$OMP END PARALLEL
-
    close(10)
    close(12)
    close(13)
@@ -322,6 +328,13 @@ subroutine moment_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    close(15)
    close(16)
 
+   deallocate (hc, vp, vs, qp, qs, rho)
+   deallocate (delay, mu, strike, rake, dip, disp)
+   deallocate (xs, ys, zs, isc, a, width, length)
+   deallocate (xr, yr, zr, rindex,sindex)
+   if (ics==3) deallocate (fsou)
+   deallocate (iwk)
+   deallocate (ux, uy, uz)
    
 end
 
