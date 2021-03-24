@@ -1,5 +1,0 @@
-source is a ricker wavelet, with pseudo period of 0.3 sec, in displacement
-axi.hist format:
-1 7.5e20 148.0 84.0 -47.0 0. 0. 10.0
-source index, moment, strike, dip, rake,0.,0.,time_delay
-(see README file)
