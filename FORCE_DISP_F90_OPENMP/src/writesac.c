@@ -167,7 +167,7 @@ output_(	float   data[],
           t.sec=0.;
 	}
 
-	memset(sachead,0,sizeof(SAC));
+	memcpy(sachead,&sac_null,sizeof(SAC));
 
 	sachead->delta=*pas;
 	sachead->b = 0;
@@ -178,6 +178,7 @@ output_(	float   data[],
         sachead->nzmin  = t.mn;
         sachead->nzsec  = (int)(t.sec);
         sachead->nzmsec = (t.sec-sachead->nzsec)*1000;
+        sachead->scale  = 1.;   // to confotm to ObsPy
 
         sachead->nvhdr = 6;
 
