@@ -7,7 +7,7 @@ CFLAGS=
 #
 FC=gfortran
 F2PY=-lgomp --opt="-Ofast -march=native" --f90flags="-fopenmp -cpp"
-FFLAGS = -Ofast -cpp -fopenmp
+FFLAGS = -Ofast -cpp -fopenmp -fPIC
 
 
 #
