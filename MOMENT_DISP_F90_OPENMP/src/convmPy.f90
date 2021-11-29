@@ -297,7 +297,7 @@ endif
 !$OMP DO ORDERED,SCHEDULE(DYNAMIC)
    do ir = 1, nr
 
-!                on complete le spectre pour les hautes frequences
+!               on complete le spectre pour les hautes frequences
 !               avec inversion du signe de la partie imaginaire pour
 !               la FFT inverse qui n existe pas avec fft2cd
       do jf = nt + 2 - nfreq, nt
@@ -313,13 +313,14 @@ endif
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/nt
-         sx(it,rindex(ir)) = (ux(it, ir)*cc)
-         sy(it,rindex(ir)) = (uy(it, ir)*cc)
-         sz(it,rindex(ir)) = (uz(it, ir)*cc)
+         sx(it,rindex(ir)+1) = real(ux(it, ir)*cc)
+         sy(it,rindex(ir)+1) = real(uy(it, ir)*cc)
+         sz(it,rindex(ir)+1) = real(uz(it, ir)*cc)
       enddo
 
 
    enddo
+!$OMP END DO
 !$OMP END PARALLEL
    close(10)
    close(12)
