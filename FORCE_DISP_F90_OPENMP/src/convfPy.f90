@@ -26,6 +26,9 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
    use parameter
    use fsourcem
+#if defined(_OPENMP)
+   use omp_lib
+#endif
    implicit none
 
 !f2py intent(in) ics,t0,t1,icc
@@ -281,7 +284,15 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !++++++++++++
 !                Calcul des sismogrammes
 !++++++++++++
+!$OMP PARALLEL DEFAULT(FIRSTPRIVATE) &
+!$OMP SHARED(ux,uy,uz,nr,mm,rindex,sx,sy,sz,nt,nfreq,tl,aw)
+#if defined(_OPENMP)
+   if (omp_get_thread_num()==1) then
+       write(0,*) 'running openMp on ',omp_get_num_threads(),' threads'
+   endif
+#endif
 
+!$OMP DO ORDERED,SCHEDULE(DYNAMIC)
    do ir = 1, nr
 
 !                on complete le spectre pour les hautes frequences
@@ -300,12 +311,14 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/nt
-         sx(it,rindex(ir)) = (ux(it, ir)*cc)
-         sy(it,rindex(ir)) = (uy(it, ir)*cc)
-         sz(it,rindex(ir)) = (uz(it, ir)*cc)
+         sx(it,rindex(ir)+1) = (ux(it, ir)*cc)
+         sy(it,rindex(ir)+1) = (uy(it, ir)*cc)
+         sz(it,rindex(ir)+1) = (uz(it, ir)*cc)
       enddo
 
    enddo
+!$OMP END DO
+!$OMP END PARALLEL
    close(10)
    close(12)
    close(13)
