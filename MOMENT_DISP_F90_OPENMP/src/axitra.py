@@ -49,8 +49,6 @@ class Axitra:
         import random
 
         self.model = model
-        self.stations = stations
-        self.sources = sources
         self.fmax = fmax
         self.duration = duration
         self.latlon = latlon
@@ -80,6 +78,13 @@ class Axitra:
             sys.exit(1)
         else:
             self.nstation = stations.shape[0]
+        # make sure that index start at 1
+        print('=========================')
+        index = np.argsort(stations[:,0].squeeze())
+        stations = stations[index,:]
+        index = np.arange(0,len(index)) +1
+        stations[:,0] = index
+        self.stations = stations
 
         # check source list
         if sources.ndim != 2 or sources.shape[1] != 4:
@@ -88,6 +93,12 @@ class Axitra:
             sys.exit(1)
         else:
             self.nsource = sources.shape[0]
+        # make sure that index start at 1
+        index = np.argsort(sources[:,0].squeeze())
+        sources = sources[index,:]
+        index = np.arange(0,len(index)) +1
+        sources[:,0] = index
+        self.sources = sources
 
         # estimate periodicity if not supplied
         if xl == 0.:

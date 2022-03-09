@@ -57,7 +57,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
                                 disp(:), xs(:), ys(:), zs(:), amp(:)
    complex(kind=8), allocatable :: ux(:, :), uy(:, :), uz(:, :), fsou(:)
 
-   namelist/input/nc, nfreq, tl, aw, nr, ns, xl, ikmax, latlon, freesurface, sourcefile, statfile
+   namelist/input/nfreq, tl, aw, xl, ikmax, latlon, freesurface, sourcefile, statfile
 
    dt0 = 0.
    chan(1) = 'X'
@@ -127,7 +127,7 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
    allocate (delay(ns), amp(ns))
    allocate (xs(ns), ys(ns), zs(ns), isc(ns), a(NSTYPE, ns))
    allocate (xr(nr), yr(nr), zr(nr), rindex(nr),sindex(ns))
-
+   
 ! other input files
    open (15, form='formatted', file=trim(header)//'.hist')
 
@@ -135,7 +135,6 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 ! read source function type from input args with t0,t1
 ! + +++++++++++
    icc = icc - 1
-
 !++++++++++++
 !                 medium, source and station
 !++++++++++++
@@ -198,10 +197,14 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       a(2,is)=a(2,is)*amp(is)
       a(3,is)=a(3,is)*amp(is)
    enddo
-
+!++++++++++++
+! read spatial periodicity and time duration
+!++++++++++++
+   open (11, form='formatted', file=trim(header)//'.head')
+   read (11,*) xl,tl
 
 !++++++++++++
-!        Lecture fonctions de transfert
+! Initialize time and dimension parameters
 !++++++++++++
    xmm = log(real(nfreq))/log(2.)
    mm = int(xmm) + 1
@@ -239,13 +242,12 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 
 
 ! loop over frequencies
-   open (10, form='formatted', file=trim(header)//'.head')
    do jf = 1, nfreq
       freq = float(jf - 1)/tl
       omega = cmplx(pi2*freq, aw)
       deriv = (ai*omega)**icc
 
-      read (10, *, end=2000)
+      read (11, *, end=2000)
       if (ics == 3) then
         freqs=fsou(jf)
       else
@@ -291,7 +293,6 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
        write(0,*) 'running openMp on ',omp_get_num_threads(),' threads'
    endif
 #endif
-
 !$OMP DO ORDERED,SCHEDULE(DYNAMIC)
    do ir = 1, nr
 
@@ -311,21 +312,20 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/nt
-         sx(it,rindex(ir)+1) = (ux(it, ir)*cc)
-         sy(it,rindex(ir)+1) = (uy(it, ir)*cc)
-         sz(it,rindex(ir)+1) = (uz(it, ir)*cc)
+         sx(it,rindex(ir)) = (ux(it, ir)*cc)
+         sy(it,rindex(ir)) = (uy(it, ir)*cc)
+         sz(it,rindex(ir)) = (uz(it, ir)*cc)
       enddo
 
    enddo
 !$OMP END DO
 !$OMP END PARALLEL
-   close(10)
+   close(11)
    close(12)
    close(13)
    close(14)
    close(15)
    close(16)
-
    deallocate (hc, vp, vs, qp, qs, rho)
    deallocate (xs, ys, zs, isc, amp, delay)
    deallocate (xr, yr, zr, rindex,sindex)

@@ -203,6 +203,8 @@ endif
       call cmoment(mu(is), strike(is), dip(is), rake(is), disp(is), width(is)*length(is), a(1, is))
    enddo
 
+   open (10, form='formatted', file=trim(header)//'.head')
+   read(10,*) xl,tl
 
 !++++++++++++
 ! Initialize time and dmention parameters
@@ -241,7 +243,6 @@ endif
    endif
 
 ! loop over frequencies
-   open (10, form='formatted', file=trim(header)//'.head')
    do jf = 1, nfreq
       freq = float(jf - 1)/tl
       omega = cmplx(pi2*freq, aw)
@@ -313,9 +314,9 @@ endif
       do it = 1, nt
          ck = float(it - 1)/nt
          cc = exp(-aw*tl*ck)/nt
-         sx(it,rindex(ir)+1) = real(ux(it, ir)*cc)
-         sy(it,rindex(ir)+1) = real(uy(it, ir)*cc)
-         sz(it,rindex(ir)+1) = real(uz(it, ir)*cc)
+         sx(it,rindex(ir)) = (ux(it, ir)*cc)
+         sy(it,rindex(ir)) = (uy(it, ir)*cc)
+         sz(it,rindex(ir)) = (uz(it, ir)*cc)
       enddo
 
 
