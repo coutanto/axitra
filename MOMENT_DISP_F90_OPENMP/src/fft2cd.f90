@@ -1,31 +1,31 @@
 	subroutine  fft2cd (a,m,iwk)                                       
-c                                  specifications for arguments         
+!                                  specifications for arguments         
 	implicit real*8 (a-h,o-z)
 	integer            m,iwk(*)                                       
 	complex*16      a(*)                                           
-c                                  specifications for local variables   
-	integer     i,isp,j,jj,jsp,k,k0,k1,k2,k3,kb,
-     &              kn,mk,mm,mp,n,n4,n8,n2,lm,nn,jk 
-	real*8      rad,c1,c2,c3,s1,s2,s3,ck,sk,sq,a0,a1,a2,a3,    
-     &              b0,b1,b2,b3,twopi,temp,                        
-     &              zero,one,z0(2),z1(2),z2(2),z3(2)               
+!                                  specifications for local variables   
+	integer     i,isp,j,jj,jsp,k,k0,k1,k2,k3,kb, &
+                    kn,mk,mm,mp,n,n4,n8,n2,lm,nn,jk 
+	real*8      rad,c1,c2,c3,s1,s2,s3,ck,sk,sq,a0,a1,a2,a3,     &
+                    b0,b1,b2,b3,twopi,temp,                        &
+                    zero,one,z0(2),z1(2),z2(2),z3(2)               
 	complex*16  za0,za1,za2,za3,ak2                            
-	equivalence  (za0,z0(1)),(za1,z1(1)),(za2,z2(1)),           
-     &              (za3,z3(1)),(a0,z0(1)),(b0,z0(2)),(a1,z1(1)),  
-     &              (b1,z1(2)),(a2,z2(1)),(b2,z2(2)),(a3,z3(1)),   
-     &              (b3,z3(2))                                     
-	data        sq,sk,ck,twopi/.7071068,.3826834,
-     &              .9238795,6.283185/                                
+	equivalence  (za0,z0(1)),(za1,z1(1)),(za2,z2(1)),           &
+                    (za3,z3(1)),(a0,z0(1)),(b0,z0(2)),(a1,z1(1)), & 
+                    (b1,z1(2)),(a2,z2(1)),(b2,z2(2)),(a3,z3(1)),   &
+                    (b3,z3(2))                                     
+	data        sq,sk,ck,twopi/.7071068,.3826834,   &
+                    .9238795,6.283185/                                
 	data        zero/0.0/,one/1.0/                             
-c                   sq=sqrt2/2,sk=sin(pi/8),ck=cos(pi/8) 
-c                   twopi=2*pi                           
-c                                  first executable statement           
+!                   sq=sqrt2/2,sk=sin(pi/8),ck=cos(pi/8) 
+!                   twopi=2*pi                           
+!                                  first executable statement           
 	mp = m+1                                                          
 	n = 2**m                                                          
 	iwk(1) = 1                                                        
 	mm = (m/2)*2                                                      
 	kn = n+1                                                          
-c                                  initialize work vector               
+!                                  initialize work vector               
 	do 5  i=2,mp                                                      
 	   iwk(i) = iwk(i-1)+iwk(i-1)                                     
 5	continue                                                          
@@ -60,7 +60,7 @@ c                                  initialize work vector
 	j = 4                                                             
 30	isp = iwk(k)                                                      
 	if (jj .eq. 0) go to 40                                           
-c                                  reset trigonometric parameter(s       )
+!                                  reset trigonometric parameter(s       )
 	c2 = jj * isp * rad                                               
 	c1 = cos(c2)                                                      
 	s1 = sin(c2)                                                      
@@ -69,8 +69,8 @@ c                                  reset trigonometric parameter(s       )
 	c3 = c2 * c1 - s2 * s1                                            
 	s3 = c2 * s1 + s2 * c1                                            
 40	jsp = isp + kb                                                    
-c                                  determine fourier coefficients       
-c                                    in groups of 4                     
+!                                  determine fourier coefficients       
+!                                    in groups of 4                     
 	do 50 i=1,isp                                                     
 	   k0 = jsp - i                                                   
 	   k1 = k0 + isp                                                  
@@ -111,8 +111,8 @@ c                                    in groups of 4
 	k = k - 2                                                         
 	go to 30                                                          
 55	kb = k3 + isp                                                     
-c                                  check for completion of final        
-c                                    iteration                          
+!                                  check for completion of final        
+!                                    iteration                          
 	if (kn .le. kb) go to 70                                          
 	if (j .ne. 1) go to 60                                            
 	k = 3                                                             
@@ -128,13 +128,13 @@ c                                    iteration
 	s1 = (c2 + s1) * sq                                               
 	go to 35                                                          
 70	continue                                                          
-c                                  permute the complex vector in        
-c                                    reverse binary order to normal     
-c                                    order                              
+!                                  permute the complex vector in        
+!                                    reverse binary order to normal     
+!                                    order                              
 	if(m .le. 1) go to 9005                                           
 	mp = m+1                                                          
 	jj = 1                                                            
-c                                  initialize work vector               
+!                                  initialize work vector               
 	iwk(1) = 1                                                        
 	do 75  i = 2,mp                                                   
 	   iwk(i) = iwk(i-1) * 2                                          
@@ -145,7 +145,7 @@ c                                  initialize work vector
 	lm = n2                                                           
 	nn = iwk(mp)+1                                                    
 	mp = mp-4                                                         
-c                                  determine indices and switch a       
+!                                  determine indices and switch a       
 	j = 2                                                             
 80	jk = jj + n2                                                      
 	ak2 = a(j)                                                        
@@ -176,9 +176,9 @@ c                                  determine indices and switch a
 	a(k) = a(jk)                                                      
 	a(jk) = ak2                                                       
 110	j = j + 1                                                         
-c                                  cycle repeated until limiting number 
-c                                    of changes is achieved             
+!                                  cycle repeated until limiting number 
+!                                    of changes is achieved             
 	if (j .le. lm) go to 80                                           
-c                                                                       
+!                                                                       
 9005	return                                                            
 	end                                                               
