@@ -117,9 +117,9 @@ pt.grid()
 nfreq = t.size
 df=1./t[-1]
 f = np.arange(0,nfreq)*df
-pt.loglog(f, np.abs(np.fft.fft(sy_2[0,:])), f, np.abs(np.fft.fft(sy_4[0,:])),
-          f, np.abs(np.fft.fft(sy_5[0,:])),f, np.abs(np.fft.fft(sy_7[0,:])),
-          f, np.abs(np.fft.fft(sy_8[0,:])), f, np.abs(np.fft.fft(sy_0[0,:])),
+pt.loglog(f, np.abs(np.fft.fft(sy_2[0,:]))/nfreq, f, np.abs(np.fft.fft(sy_4[0,:]))/nfreq,
+          f, np.abs(np.fft.fft(sy_5[0,:]))/nfreq,f, np.abs(np.fft.fft(sy_7[0,:]))/nfreq,
+          f, np.abs(np.fft.fft(sy_8[0,:]))/nfreq, f, np.abs(np.fft.fft(sy_0[0,:]))/nfreq,
           f, f*0.+LowFreq_asympt)
 pt.legend(['dirac integrated','smooth acausal step','integrated triangle step',
            'linear ramp','Heaviside','integrated trapezoid','Far-field Low Freq. asymptote']);

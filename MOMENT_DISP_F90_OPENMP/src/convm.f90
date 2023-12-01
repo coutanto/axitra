@@ -279,6 +279,7 @@ program convm
         freqs=fsou(jf)
       else
         freqs=fsource(ics, t0, omega, t1, pas)
+	!if (ics==0) freqs = freqs / nt
       endif
 
       do is = 1, ns ! loop over source
@@ -338,7 +339,7 @@ program convm
 ! and apply Fourier transform normalization (1/nt)
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/nt
+         cc = exp(-aw*tl*ck)
          sx(it) = real(ux(it, ir)*cc)
          sy(it) = real(uy(it, ir)*cc)
          sz(it) = real(uz(it, ir)*cc)

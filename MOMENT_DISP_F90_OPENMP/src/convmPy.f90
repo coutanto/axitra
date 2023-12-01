@@ -253,6 +253,7 @@ endif
         freqs=fsou(jf)
       else
         freqs=fsource(ics, t0, omega, t1, pas)
+	!if (ics==0 .or. ics==8) freqs = freqs/nt
       endif
 
       do is = 1, ns ! loop over source
@@ -313,7 +314,7 @@ endif
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)/nt
+         cc = exp(-aw*tl*ck)
          sx(it,rindex(ir)) = (ux(it, ir)*cc)
          sy(it,rindex(ir)) = (uy(it, ir)*cc)
          sz(it,rindex(ir)) = (uz(it, ir)*cc)
