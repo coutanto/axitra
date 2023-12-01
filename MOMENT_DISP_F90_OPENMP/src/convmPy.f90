@@ -253,7 +253,6 @@ endif
         freqs=fsou(jf)
       else
         freqs=fsource(ics, t0, omega, t1, pas)
-	!if (ics==0 .or. ics==8) freqs = freqs/nt
       endif
 
       do is = 1, ns ! loop over source
