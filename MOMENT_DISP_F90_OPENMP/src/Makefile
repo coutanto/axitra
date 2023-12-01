@@ -1,6 +1,6 @@
 ################## PARAMETERS TO MODIFY *********************************
 
-CC=icc		#	C Compiler
+CC=gcc		#	C Compiler
 CFLAGS=-O3 	# 	and its options
 #
 # GFORTRAN compiler
