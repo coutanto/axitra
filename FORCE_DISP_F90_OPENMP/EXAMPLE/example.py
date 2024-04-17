@@ -3,7 +3,8 @@
 
 # In[1]:
 
-
+import sys
+sys.path.append("../src")
 import numpy as np
 from axitra import *
 import matplotlib.pyplot as pt
@@ -47,7 +48,7 @@ model = np.array([[1000., 5000., 2886., 2700., 1000., 500.],
 # fmax = 20Hz
 # duration = 50 sec
 # create class for parameters
-ap = Axitra(model,stations,sources,duration=50.,fmax=20.,latlon=True)
+ap = Axitra(model,stations,sources,duration=50.,fmax=20.,latlon=True, axpath='../src' )
 
 #run the Green's function calculation
 force.green(ap);
@@ -106,7 +107,7 @@ ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
 
 
 # Run a new instance by reading existing axitra input files
-ap2=Axitra.read(str(ap.id))
+ap2=Axitra.read(str(ap.id), axpath='../src')
 # clean files associtated with previous instance
 ap.clean()
 
@@ -126,7 +127,7 @@ t, sx, sy, sz = force.conv(ap2,hist,source_type=1,t0=0.5,unit=1)
 
 pt.figure(figsize=(18, 9))
 ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
-
+plt.show()
 
 # In[19]:
 
