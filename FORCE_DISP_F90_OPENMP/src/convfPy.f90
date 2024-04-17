@@ -206,11 +206,17 @@ subroutine force_conv(id,ics, t0, t1, icc, sx,sy,sz,nsx,ntx,n1y,n2y,n1z,n2z)
 !++++++++++++
 ! Initialize time and dimension parameters
 !++++++++++++
-   xmm = log(real(nfreq))/log(2.)
-   mm = int(xmm) + 1
-   if (xmm-mm+1 >0) mm=mm+1
+   ! used to be computed with the following formula
+   ! Let this be set by calling python function, and just
+   ! read array size instead
+   ! xmm = log(real(nfreq))/log(2.)
+   ! mm = int(xmm) + 1
+   ! write(0,*) 'mm',mm
+   ! if (xmm-mm+1 >0) mm=mm+1
+   ! nt = 2**mm
+   nt = ntx
+   mm = log(real(nt))/log(2.)
 
-   nt = 2**mm
    allocate (iwk(nt))
    allocate (ux(nt, nr), uy(nt, nr), uz(nt, nr))
    ux = 0.d0
