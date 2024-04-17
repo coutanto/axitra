@@ -4,7 +4,7 @@
 # In[1]:
 
 import sys
-sys.path.append(\"../src\")
+sys.path.append("../src")
 import numpy as np
 from axitra import *
 import matplotlib.pyplot as pt
