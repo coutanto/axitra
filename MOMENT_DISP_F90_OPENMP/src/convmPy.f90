@@ -209,10 +209,16 @@ endif
 !++++++++++++
 ! Initialize time and dmention parameters
 !++++++++++++
-   xmm = log(real(nfreq))/log(2.)
-   mm = int(xmm) + 1
-   if (xmm-mm+1 >0) mm=mm+1
-   nt = 2**mm
+   ! nt and mm used to be computed with the following formula
+   ! Let this be set by calling python function, and just
+   ! read array size instead
+   ! xmm = log(real(nfreq))/log(2.)
+   ! mm = int(xmm) + 1
+   ! if (xmm-mm+1 >0) mm=mm+1
+   ! nt = 2**mm
+   nt = ntx
+   mm = log(real(nt))/log(2.)
+
    allocate (iwk(nt))
    allocate (ux(nt, nr), uy(nt, nr), uz(nt, nr))
    ux = 0.d0
