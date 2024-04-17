@@ -127,7 +127,7 @@ t, sx, sy, sz = force.conv(ap2,hist,source_type=1,t0=0.5,unit=1)
 
 pt.figure(figsize=(18, 9))
 ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
-plt.show()
+pt.show()
 
 # In[19]:
 
