@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
 import sys
-sys.path.append("../src")
+sys.path.append("../src") 
+
 import numpy as np
 from axitra import *
 import matplotlib.pyplot as pt
 
+#%matplotlib notebook
 
-# In[2]:
 
 
 # 2 sources
@@ -18,8 +17,6 @@ import matplotlib.pyplot as pt
 sources=np.array([[1, 45.100, 2.000, 5000.000],
                   [2, 45.200, 2.000, 5000.000]])
 
-
-# In[3]:
 
 
 # 5 receivers with geographical coordinates
@@ -32,7 +29,6 @@ stations=np.array(
          [5, 44.000, 3.000, 0.000]])
 
 
-# In[4]:
 
 
 # 2 layers
@@ -41,69 +37,61 @@ model = np.array([[1000., 5000., 2886., 2700., 1000., 500.],
                   [0., 6000., 3886., 2700., 1000., 500.]])
 
 
-# In[6]:
+
+
+# Fill in the instance of Axitra Class
+ap = Axitra(model, stations, sources, fmax=20., duration=50., xl=0., latlon=True, axpath='../src')
+
 
 
 # Compute green's function
 # fmax = 20Hz
 # duration = 50 sec
-# create class for parameters
-ap = Axitra(model,stations,sources,duration=50.,fmax=20.,latlon=True,axpath='../src')
+ap = moment.green(ap)
 
-#run the Green's function calculation
-force.green(ap);
-
-
-# In[7]:
 
 
 # history of source
-# index, fx_amp, fy_amp, fz_amp, total_amplitude, time_delay
-hist = np.array([[1,1.,0.,1.,10.,10.0],
-                 [2,0.,1.,0.,10.,10.0]])
+hist = np.array([[1,7.5e20,148.0,84.0,-47.0,0.,0.,20.0],
+                 [2,7.5e20,148.0,84.0,-47.0,0.,0.,20.0]])
 
 
-# In[8]:
 
-
-ap.print()
-
-
-# In[9]:
 
 
 # first convolution example
 # source= ricker
 # source time width = 3 sec
 # output unit = displacement
-t, sx, sy, sz = force.conv(ap,hist,source_type=1,t0=0.5,unit=1)
+t, sx, sy, sz = moment.conv(ap,hist,source_type=1,t0=2,unit=1)
 
 
-# In[10]:
+
 
 
 pt.figure(figsize=(18, 9))
 ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
 
 
-# In[11]:
+
 
 
 # convolution with a user provided source function
 # A dirac of unit 1 at 10th sample
-sfunc=np.zeros((ap.npt,),dtype='float64')
-sfunc[10]=1.
-t, sx, sy, sz = force.conv(ap,hist,source_type=3,t0=3,unit=1,sfunc=sfunc)
+sfunc = np.zeros((ap.npt,),dtype='float64')
+sfunc[100]=1.
+del sx, sy, sz
+t, sx, sy, sz = moment.conv(ap,hist,source_type=3,t0=1,unit=1,sfunc=sfunc)
 
 
-# In[12]:
+
 
 
 pt.figure(figsize=(18, 9))
-ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
+ier=pt.plot(t,sx[0,:])#,t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
 
 
-# In[13]:
+
 
 
 # Run a new instance by reading existing axitra input files
@@ -112,31 +100,28 @@ ap2=Axitra.read(str(ap.id),axpath='../src')
 ap.clean()
 
 
-# In[14]:
+
 
 
 # Run the second instance that should give identical results
-force.green(ap2);
-t, sx, sy, sz = force.conv(ap2,hist,source_type=1,t0=0.5,unit=1)
-
-
-# In[15]:
-
-
-#clean all files o disk relative to this example
-
+moment.green(ap2);
+t, sx, sy, sz = moment.conv(ap2,hist,source_type=1,t0=2,unit=1)
 pt.figure(figsize=(18, 9))
 ier=pt.plot(t,sx[1,:],t,sx[2,:],t,sx[3,:],t,sx[4,:],t,sx[0,:],)
 
 
-# In[16]:
 
 
-help(force.green)
+help(moment.green)
 
 
-# In[17]:
 
 
-help(force.conv)
+
+help(moment.conv)
+
+
+
+
+
 
