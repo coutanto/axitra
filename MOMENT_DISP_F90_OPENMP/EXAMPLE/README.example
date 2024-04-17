@@ -1,4 +1,19 @@
-ZZ
+This directory contains
+
+1) example to be ran from shell
+axitra then convms
+
+source is a ricker wavelet, with pseudo period of 0.3 sec, in displacement
+axi.hist format:
+1 7.5e20 148.0 84.0 -47.0 0. 0. 10.0
+source index, moment, strike, dip, rake,0.,0.,time_delay
+(see README file)
+
+For python exmaples:
+export PYTHONPATH=$PYTHONPATH:../src
+
+2) python and jupyter notebook example
+example.py and example.ipynb
 
 3) A check on the amplitude computed by the program
    with a comparison with the theoretical  low frequency asymptote
