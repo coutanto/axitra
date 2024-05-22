@@ -338,7 +338,7 @@ program convm
 ! and apply Fourier transform normalization (1/nt)
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)
+         cc = exp(-aw*tl*ck)  /tl
          sx(it) = real(ux(it, ir)*cc)
          sy(it) = real(uy(it, ir)*cc)
          sz(it) = real(uz(it, ir)*cc)

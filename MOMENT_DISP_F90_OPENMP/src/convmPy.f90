@@ -217,7 +217,7 @@ endif
    ! if (xmm-mm+1 >0) mm=mm+1
    ! nt = 2**mm
    nt = ntx
-   mm = log(real(nt))/log(2.)
+   mm = nint(log(dble(nt))/log(2.d0))
 
    allocate (iwk(nt))
    allocate (ux(nt, nr), uy(nt, nr), uz(nt, nr))
@@ -319,7 +319,7 @@ endif
 
       do it = 1, nt
          ck = float(it - 1)/nt
-         cc = exp(-aw*tl*ck)
+         cc = exp(-aw*tl*ck) / tl
          sx(it,rindex(ir)) = (ux(it, ir)*cc)
          sy(it,rindex(ir)) = (uy(it, ir)*cc)
          sz(it,rindex(ir)) = (uz(it, ir)*cc)

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
+
+#get_ipython().run_line_magic('load_ext', 'autoreload')
+#get_ipython().run_line_magic('autoreload', '2')
 
 import sys
 sys.path.append("../src") 
@@ -17,7 +20,7 @@ import matplotlib.pyplot as pt
 
 # ## Parameters for receiver and source
 
-# In[3]:
+# In[2]:
 
 
 # ---------------------------------
@@ -51,7 +54,7 @@ model = np.array([[00., 5000., beta, rho, 1000., 1000.]])
 
 # ### Low frequency asymptotic level
 
-# In[4]:
+# In[3]:
 
 
 # ---------------------------------
@@ -63,11 +66,12 @@ print('Low frequency asymptote ',LowFreq_asympt)
 
 # ## Run Green's function calculation
 
-# In[6]:
+# In[10]:
 
 
 # Fill in the instance of Axitra Class
-ap = Axitra(model, stations, sources, fmax=20., duration=50., xl=500000., latlon=False,freesurface=False,axpath='../src')
+ap = Axitra(model, stations, sources, fmax=50., duration=30., xl=500000., latlon=False,freesurface=False,axpath='../src')
+print('npt',ap.npt)
 
 # Compute green's function
 ap = moment.green(ap)
@@ -75,7 +79,7 @@ ap = moment.green(ap)
 
 # ## Compute convolution for different source time function
 
-# In[9]:
+# In[11]:
 
 
 # ---------------------------------
@@ -96,7 +100,7 @@ t, sx_8, sy_8, sz_8 = moment.conv(ap,hist,source_type=8,t0=0.05,t1=0.1,unit=1)
 
 # ## Plot results
 
-# In[10]:
+# In[15]:
 
 
 pt.figure(figsize=(8, 10))
@@ -113,11 +117,18 @@ pt.title('Displacement spectra')
 pt.grid()
 nfreq = t.size
 df=1./t[-1]
+dt=t[1]-t[0]
 f = np.arange(0,nfreq)*df
-pt.loglog(f, np.abs(np.fft.fft(sy_2[0,:]))/nfreq, f, np.abs(np.fft.fft(sy_4[0,:]))/nfreq,
-          f, np.abs(np.fft.fft(sy_5[0,:]))/nfreq,f, np.abs(np.fft.fft(sy_7[0,:]))/nfreq,
-          f, np.abs(np.fft.fft(sy_8[0,:]))/nfreq, f, np.abs(np.fft.fft(sy_0[0,:]))/nfreq,
+pt.loglog(f, np.abs(np.fft.fft(sy_2[0,:]))*dt, f, np.abs(np.fft.fft(sy_4[0,:]))*dt,
+          f, np.abs(np.fft.fft(sy_5[0,:]))*dt,f, np.abs(np.fft.fft(sy_7[0,:]))*dt,
+          f, np.abs(np.fft.fft(sy_8[0,:]))*dt, f, np.abs(np.fft.fft(sy_0[0,:]))*dt,
           f, f*0.+LowFreq_asympt)
 pt.legend(['dirac integrated','smooth acausal step','integrated triangle step',
            'linear ramp','Heaviside','integrated trapezoid','Far-field Low Freq. asymptote']);
+
+
+# In[ ]:
+
+
+
 
