@@ -5,11 +5,11 @@
 
 # ## 1) Header
 
-# In[1]:
+# In[34]:
 
 
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
+#get_ipython().run_line_magic('load_ext', 'autoreload')
+#get_ipython().run_line_magic('autoreload', '2')
 
 import sys
 sys.path.append("../src") 
@@ -22,7 +22,7 @@ import matplotlib.pyplot as pt
 
 # ## 2) Theoretical response from Aki & Richards, Formula 4.42 
 
-# In[2]:
+# In[35]:
 
 
 def GreenTheo(theta, phi, r, alpha, beta, rho, M0, t):
@@ -110,7 +110,7 @@ def GreenTheo(theta, phi, r, alpha, beta, rho, M0, t):
 
 # ## Parameters for receiver and source
 
-# In[3]:
+# In[36]:
 
 
 # ---------------------------------
@@ -145,7 +145,7 @@ model = np.array([[00., alpha, beta, rho, 1000., 1000.]])
 
 # ### Low frequency asymptotic level
 
-# In[4]:
+# In[37]:
 
 
 # ---------------------------------
@@ -157,7 +157,7 @@ print('Low frequency asymptote ',LowFreq_asympt)
 
 # ## Run Green's function calculation
 
-# In[11]:
+# In[38]:
 
 
 # Fill in the instance of Axitra Class
@@ -170,7 +170,7 @@ ap = moment.green(ap)
 
 # ## Compute convolution for different source time function
 
-# In[12]:
+# In[39]:
 
 
 # ---------------------------------
@@ -191,7 +191,7 @@ t, sx_8, sy_8, sz_8 = moment.conv(ap,hist,source_type=8,t0=0.05,t1=0.1,unit=1)
 
 # ## Compute theoretical result
 
-# In[13]:
+# In[40]:
 
 
 phi = 0
@@ -202,7 +202,7 @@ u_r, u_theta, u_phi = GreenTheo(theta, phi, dist, alpha, beta, rho, -M0, t)
 
 # ## Plot results
 
-# In[14]:
+# In[41]:
 
 
 pt.figure(figsize=(8, 10))
@@ -224,11 +224,11 @@ nfreq = t.size
 df=1./t[-1]
 dt=t[1]-t[0]
 f = np.arange(0,nfreq)*df
-pt.loglog(f, np.abs(np.fft.fft(sy_2[0,:]))*dt, f, np.abs(np.fft.fft(sy_4[0,:]))*dt,
-          f, np.abs(np.fft.fft(sy_5[0,:]))*dt,f, np.abs(np.fft.fft(sy_7[0,:]))*dt,
-          f, np.abs(np.fft.fft(sy_8[0,:]))*dt, f, np.abs(np.fft.fft(sy_0[0,:]))*dt,
+pt.loglog(f, np.abs(np.fft.fft(sy_0[0,:]))*dt, f, np.abs(np.fft.fft(sy_2[0,:]))*dt, f, np.abs(np.fft.fft(sy_4[0,:]))*dt,
+          f, np.abs(np.fft.fft(sy_5[0,:]))*dt,f, np.abs(np.fft.fft(sy_7[0,:]))*dt, f, np.abs(np.fft.fft(sy_8[0,:]))*dt,
           f, f*0.+LowFreq_asympt, f, np.abs(np.fft.fft(u_theta))*dt)
+
 pt.legend(['dirac integrated','smooth acausal step','integrated triangle step',
            'linear ramp','Heaviside','integrated trapezoid','Far-field Low Freq. asymptote',
-           'Theoretical response for a Heaviside']);
+           'Theoretical response for a Heaviside'])
 
