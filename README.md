@@ -1,7 +1,6 @@
 # Numerical Computation of seismograms in 3D plane layered medium
-## Last version May 2024 fixes an amplitude normalization problem introduced few versions ago
-## Results are checked againt theoretical response, see EXAMPLE/check_amplitude.ipynb 
-##
+### Last version May 2024 fixes an amplitude normalization problem introduced few versions ago
+### Results are checked againt theoretical response, see EXAMPLE/check_amplitude.ipynb 
 
 Axitra Force & Moment versions 
 
