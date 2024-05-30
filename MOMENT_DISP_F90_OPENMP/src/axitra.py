@@ -481,11 +481,11 @@ class force:
         '''
 
         try:
-            import convfPy
+            import convmPy
         except:
             import sys
             sys.path.append(ap.axpath)
-            import convfPy
+            import convmPy
         import os
 
         #check if axi_??.data files exists
@@ -526,7 +526,7 @@ class force:
 
 
         # run convolution
-        convfPy.force_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
+        convmPy.moment_conv(ap.id, source_type, t0, t1, unit, sismox, sismoy, sismoz)
 
         # create time vector
         dt = ap.duration/ap.npt
