@@ -122,7 +122,7 @@ class Axitra:
             self.id = id
             self.sid = 'axi_' + str(self.id)
         else:
-            self.id = random.randint(1,1000)
+            self.id = random.randint(1,999)
             self.sid = 'axi_'+str(self.id)
 
     def clean(self):
