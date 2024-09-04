@@ -27,6 +27,7 @@
         endif
         enddo 
 
+	if (xmin == xmax) xmax = xmax+0.01
         call init_lcc(x1(1),y1(1),xmin,xmax)
         do i=1,n1
 		call projlcc(x1(i),y1(i),x,y,1)
