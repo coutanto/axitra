@@ -9,13 +9,12 @@
 ! **********************************************************************
 
 module parameter
-   use iso_fortran_env
    implicit none
 
 ! size for kind declaration, fs= single precision, fd=double precision
 ! uses iso_fortran_env, can be replace by any sizeof if your compiler is not Fortran2003 compliant
-   integer :: fs,fd
-   parameter(fd=real64, fs=real32) 
+   integer, parameter :: fs = kind(0.0)
+   integer, parameter :: fd = kind(0d0)
 
    complex(kind=fd)  ::  ai
    parameter(ai=(0., 1.))
@@ -49,10 +48,9 @@ module parameter
 
 contains
    function doubleEquality(x1, x2) result(t)
-      use ISO_FORTRAN_ENV
       implicit none
-
-      real(kind=real64) :: x1, x2
+      integer, parameter :: fd = kind(0d0)
+      real(kind=fd) :: x1, x2
       logical :: t
 
       t = (abs(x1 - x2) <= epsilon(x1))

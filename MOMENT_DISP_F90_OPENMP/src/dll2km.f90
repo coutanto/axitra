@@ -48,7 +48,7 @@
 
       implicit real*8 (a-h,o-z)
       common /laccproj/ rlon0,radius,p0,fcon,cone,pi4
-      common /trig/ pi,radpdeg
+      common /trig/ radpdeg
 
 !  CONSTANTS SET IN EARLIER ROUTINE
 !           cone=alog(cos(radpdeg*stdlat1)/cos(radpdeg*stdlat2))/
@@ -79,7 +79,7 @@
       implicit real*8 (a-h,o-z)
       real*8 lon0
       common /laccproj/ rlon0,radius,p0,fcon,cone,pi4
-      common /trig/ pi,radpdeg
+      common /trig/ radpdeg
       rlon0=lon0
       pi4=atan(1.)
       pi=pi4*4.
